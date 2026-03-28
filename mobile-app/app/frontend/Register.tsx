@@ -33,7 +33,7 @@ export default function RegisterScreen() {
 const theme = {
   primary: Colors.neon.green,      // ใช้สีเขียวจากหมวด neon
   background: Colors.base.black,   // ใช้สีดำจากหมวด base
-  border: Colors.border.muted,     // (สมมติชื่อ) หรือใช้สีที่คุณตั้งไว้ในหมวด border
+  border: Colors.border.default,     // (สมมติชื่อ) หรือใช้สีที่คุณตั้งไว้ในหมวด border
   text: Colors.text.main,          // ใช้สีข้อความหลัก
 };
   const styles = createStyles(theme);
@@ -122,7 +122,7 @@ const theme = {
       setLoading(true);
 
       Alert.alert("สำเร็จ 🎉");
-      router.push('/frontend/Login');
+      router.push('/frontend/SetUpYourHealthProfile'); // เปลี่ยนเส้นทางไปหน้า SetupYourHealth
 
     } catch (err: any) {
       Alert.alert("Error", err.message);

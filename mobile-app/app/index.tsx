@@ -7,12 +7,12 @@ export default function HomeScreen() {
       <Text style={styles.title}>AI Health Coach!</Text>
       <Button 
         title="Register"
-        onPress={() => router.push('/auth/Register')}
+        onPress={() => router.push('/frontend/Register')}
       />
 
       <Button 
         title="Login"
-        onPress={() => router.push('/auth/Login')}
+        onPress={() => router.push('/frontend/Login')}
       />
     </View>
   );
