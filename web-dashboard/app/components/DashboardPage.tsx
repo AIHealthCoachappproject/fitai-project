@@ -1,129 +1,117 @@
 'use client'
 
-import { UseDashboardData } from '../hooks/useDashboardData'
+import { useDashboard, DashboardMetrics, RecentUser, RecentWorkout, RecentChat, WeightLog, WorkoutPlan } from '../hooks/useDashboard'
 import StatCard from './StatCard'
 import PageHeader from './PageHeader'
 import LoadingSpinner from './LoadingSpinner'
 import ErrorMessage from './ErrorMessage'
 import DataTable from './DataTable'
 import ChartContainer from './ChartContainer'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
-interface User {
-  id: string
-  email: string
-  name: string
-  goal: string
-  weight: number
-  plan: string
-  created_at: string
-}
+// --- Config: Stat Cards ---
+
+const statsConfig: { title: string; key: keyof DashboardMetrics; sub: string; color: string }[] = [
+  { title: 'Total Users', key: 'totalUsers', sub: 'Registered users', color: '#22c55e' },
+  { title: 'Active Today', key: 'activeUsersToday', sub: 'Users active today', color: '#3b82f6' },
+  { title: 'Food Logs', key: 'foodLogsToday', sub: 'Logs recorded today', color: '#f59e0b' },
+  { title: 'Workouts', key: 'workoutsToday', sub: 'Completed today', color: '#ef4444' },
+  { title: 'AI Chats', key: 'aiChatsToday', sub: 'Chat interactions', color: '#8b5cf6' },
+  { title: 'Active Plans', key: 'activePlans', sub: 'Workout plans', color: '#06b6d4' },
+  { title: 'Inactive Users', key: 'inactiveUsers', sub: 'No activity in 3 days', color: '#ec4899' },
+  { title: 'Calorie Imbalance', key: 'calorieImbalance', sub: 'Exceeded by 500+ cal', color: '#f97316' },
+  { title: 'Weight Alerts', key: 'weightAlerts', sub: 'Sudden weight changes', color: '#d946ef' },
+]
+
+// --- Config: Table Columns ---
+
+const userColumns = [
+  { key: 'name' as const, header: 'Name' },
+  { key: 'email' as const, header: 'Email' },
+  { key: 'goal' as const, header: 'Goal', render: (v: string) => v.replace('_', ' ').toUpperCase() },
+  { key: 'created_at' as const, header: 'Joined', render: (v: string) => new Date(v).toLocaleDateString() },
+]
+
+const workoutColumns = [
+  { key: 'userName' as const, header: 'User' },
+  { key: 'title' as const, header: 'Workout' },
+  { key: 'duration' as const, header: 'Duration', render: (v: number) => `${v} min` },
+  {
+    key: 'completed' as const,
+    header: 'Status',
+    render: (v: boolean) => (
+      <span className={v ? 'text-[#22c55e]' : 'text-gray-400'}>{v ? 'Completed' : 'Pending'}</span>
+    ),
+  },
+]
+
+const chatColumns = [
+  { key: 'userName' as const, header: 'User' },
+  { key: 'message' as const, header: 'Message' },
+  { key: 'role' as const, header: 'Role' },
+  { key: 'created_at' as const, header: 'Date', render: (v: string) => new Date(v).toLocaleDateString() },
+]
+
+const weightLogColumns = [
+  { key: 'userName' as const, header: 'User' },
+  { key: 'weight_kg' as const, header: 'Weight', render: (v: number) => `${v} kg` },
+  { key: 'bmi' as const, header: 'BMI', render: (v: number) => v.toFixed(1) },
+  { key: 'logged_at' as const, header: 'Date', render: (v: string) => new Date(v).toLocaleDateString() },
+]
+
+const workoutPlanColumns = [
+  { key: 'userName' as const, header: 'User' },
+  { key: 'plan_name' as const, header: 'Plan Name' },
+  { key: 'goal_type' as const, header: 'Goal', render: (v: string) => v.replace('_', ' ').toUpperCase() },
+  { key: 'days_per_week' as const, header: 'Days/Week', render: (v: number) => `${v} days` },
+  {
+    key: 'is_active' as const,
+    header: 'Status',
+    render: (v: boolean) => (
+      <span className={v ? 'text-[#22c55e]' : 'text-gray-400'}>{v ? 'Active' : 'Inactive'}</span>
+    ),
+  },
+]
+
+// --- Component ---
 
 export default function DashboardPage() {
-  const { stats, signupsData, goalData, recentUsers, loading, error } = UseDashboardData()
+  const { data, loading, error } = useDashboard()
 
-  const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444']
+  if (loading) return <LoadingSpinner className="h-64" />
+  if (error) return <ErrorMessage message={error} />
+  if (!data) return null
 
-  if (loading) {
-    return <LoadingSpinner className="h-64" />
-  }
-
-  if (error) {
-    return <ErrorMessage message={error} />
-  }
-
-  const userColumns = [
-    { key: 'name' as keyof User, header: 'Name' },
-    { key: 'email' as keyof User, header: 'Email' },
-    {
-      key: 'goal' as keyof User,
-      header: 'Goal',
-      render: (value: string) => value.replace('_', ' ').toUpperCase()
-    },
-    { key: 'plan' as keyof User, header: 'Plan', render: (value: string) => value.toUpperCase() },
-    {
-      key: 'created_at' as keyof User,
-      header: 'Joined',
-      render: (value: string) => new Date(value).toLocaleDateString('th-TH')
-    }
+  const tableEntries = [
+    { title: 'Recent Users', render: () => <DataTable<RecentUser> data={data.recentUsers} columns={userColumns} /> },
+    { title: 'Recent Workouts', render: () => <DataTable<RecentWorkout> data={data.recentWorkouts} columns={workoutColumns} /> },
+    { title: 'Latest Weight Logs', render: () => <DataTable<WeightLog> data={data.weightLogs} columns={weightLogColumns} /> },
+    { title: 'Active Workout Plans', render: () => <DataTable<WorkoutPlan> data={data.workoutPlans} columns={workoutPlanColumns} /> },
+    { title: 'AI Chats', render: () => <DataTable<RecentChat> data={data.recentChats} columns={chatColumns} /> },
   ]
 
   return (
     <div className="space-y-8">
       <PageHeader title="Dashboard" subtitle="FitAI Health Coach Admin Overview" />
 
+      {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Users"
-          value={stats.totalUsers.toLocaleString()}
-          sub="Registered users"
-          color="#22c55e"
-        />
-        <StatCard
-          title="Pro Subscribers"
-          value={stats.proUsers.toLocaleString()}
-          sub="Paid users"
-          color="#3b82f6"
-        />
-        <StatCard
-          title="Active Today"
-          value={stats.activeToday.toLocaleString()}
-          sub="New signups"
-          color="#f59e0b"
-        />
-        <StatCard
-          title="Monthly Recurring Revenue"
-          value={`$${stats.mrr.toLocaleString()}`}
-          sub="MRR"
-          color="#ef4444"
-        />
+        {statsConfig.map((stat) => (
+          <StatCard
+            key={stat.key}
+            title={stat.title}
+            value={data.metrics[stat.key].toLocaleString()}
+            sub={stat.sub}
+            color={stat.color}
+          />
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ChartContainer title="Signups Last 7 Days">
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={signupsData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis dataKey="date" stroke="#9ca3af" />
-              <YAxis stroke="#9ca3af" />
-              <Tooltip
-                contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #374151' }}
-                labelStyle={{ color: '#fff' }}
-              />
-              <Bar dataKey="count" fill="#22c55e" />
-            </BarChart>
-          </ResponsiveContainer>
+      {/* Data Tables */}
+      {tableEntries.map((table) => (
+        <ChartContainer key={table.title} title={table.title}>
+          {table.render()}
         </ChartContainer>
-
-        <ChartContainer title="Goal Distribution">
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={goalData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {goalData.map((entry: { name: string; value: number }, index: number) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #374151' }}
-                labelStyle={{ color: '#fff' }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </ChartContainer>
-      </div>
-
-      <ChartContainer title="Recent Users">
-        <DataTable data={recentUsers} columns={userColumns} />
-      </ChartContainer>
+      ))}
     </div>
   )
 }
