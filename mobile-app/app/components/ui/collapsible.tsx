@@ -1,11 +1,10 @@
 import { PropsWithChildren, useState } from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { StyleSheet, TouchableOpacity, useColorScheme } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { ThemedText } from '../themed-text';
+import { ThemedView } from '../themed-view';
+import { IconSymbol } from './icon-symbol'; // ไฟล์นี้อยู่ในโฟลเดอร์เดียวกัน ใช้ ./
+import { Colors } from '../../constants/theme'; // ถอยออกไป 2 ชั้นเพื่อไปหา constants
 
 export function Collapsible({ children, title }: PropsWithChildren & { title: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,7 +20,7 @@ export function Collapsible({ children, title }: PropsWithChildren & { title: st
           name="chevron.right"
           size={18}
           weight="medium"
-          color={theme === 'light' ? Colors.light.icon : Colors.dark.icon}
+          color={theme === 'light' ? '#808080' : Colors.neon.green}
           style={{ transform: [{ rotate: isOpen ? '90deg' : '0deg' }] }}
         />
 
