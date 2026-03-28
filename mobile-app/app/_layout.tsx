@@ -1,24 +1,36 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <Stack>
+      {/* 1. หน้าแรก (ต้องมีไฟล์ app/index.tsx) */}
+      <Stack.Screen
+        name="index"
+        options={{ title: 'Home', headerShown: false }}
+      />
+
+      {/* 2. หน้า Login (ต้องตรงกับโฟลเดอร์ app/auth/Login.tsx) */}
+      {/* ให้แก้ name เป็น "auth/Login" */}
+      <Stack.Screen
+        name="auth/Login" 
+        options={{
+          title: 'Login',
+          presentation: 'modal',
+          headerShown: true,
+        }}
+      />
+
+      {/* 3. หน้า Register (app/auth/Register.tsx) */}
+      <Stack.Screen
+        name="auth/Register"
+        options={{ title: 'Register' }}
+      />
+
+      {/* 4. หน้า Tabs (ถ้าคุณใช้โฟลเดอร์ (tabs)) */}
+      <Stack.Screen
+        name="(tabs)"
+        options={{ headerShown: false }}
+      />
+    </Stack>
   );
 }
