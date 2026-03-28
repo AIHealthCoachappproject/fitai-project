@@ -1,14 +1,9 @@
-/**
- * Learn more about light and dark modes:
- * https://docs.expo.dev/guides/color-schemes/
- */
-
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '../app/constants/theme';
+import { useColorScheme } from './use-color-scheme';
 
 export function useThemeColor(
   props: { light?: string; dark?: string },
-  colorName: keyof typeof Colors.light & keyof typeof Colors.dark
+  colorName: 'black' | 'white' | 'green' // ระบุชื่อสีที่คุณใช้บ่อยๆ
 ) {
   const theme = useColorScheme() ?? 'light';
   const colorFromProps = props[theme];
@@ -16,6 +11,9 @@ export function useThemeColor(
   if (colorFromProps) {
     return colorFromProps;
   } else {
-    return Colors[theme][colorName];
+    // แก้ไขให้ดึงจากโครงสร้างใหม่ของคุณ
+    if (colorName === 'green') return Colors.neon.green;
+    if (colorName === 'black') return Colors.base.black;
+    return Colors.base.white; 
   }
 }
