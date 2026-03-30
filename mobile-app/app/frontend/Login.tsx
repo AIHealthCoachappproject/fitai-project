@@ -33,19 +33,7 @@ export default function LoginScreen() {
 
         {/* Form Section */}
         <View style={styles.formContainer}>
-          <Text style={styles.title}>Register</Text>
-
-          {/* Username Input */}
-          <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Username</Text>
-            <TextInput 
-              style={styles.textInput} 
-              placeholder="Username" 
-              placeholderTextColor="#4A4A4A"
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
+          <Text style={styles.title}>Log In</Text>
 
           {/* Email Input */}
           <View style={styles.inputWrapper}>
@@ -85,13 +73,13 @@ export default function LoginScreen() {
 
           {/* Login Button */}
           <TouchableOpacity style={styles.primaryButton}>
-            <Text style={styles.primaryButtonText}>Register</Text>
+            <Text style={styles.primaryButtonText}>Log In</Text>
           </TouchableOpacity>
 
           {/* Divider */}
           <View style={styles.dividerContainer}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or Register with</Text>
+            <Text style={styles.dividerText}>or Log In with</Text>
             <View style={styles.dividerLine} />
           </View>
 
@@ -105,8 +93,8 @@ export default function LoginScreen() {
           {/* Footer */}
           <View style={styles.footer}>
              <Text style={styles.footerText}>Already have an account? </Text>
-             <TouchableOpacity onPress={() => router.push('/auth/Login')}>
-               <Text style={styles.linkTextBold}>Log in</Text>
+             <TouchableOpacity onPress={() => router.push('../auth/Register')}>
+               <Text style={styles.linkTextBold}> Register</Text>
              </TouchableOpacity>
           </View>
         </View>
@@ -174,6 +162,7 @@ const styles = StyleSheet.create({
   textInput: {
     fontSize: 16,
     color: '#FFFFFF',
+    
   },
   checkboxContainer: {
     flexDirection: 'row',
