@@ -1,11 +1,12 @@
 import React from "react";
-import { Colors } from "@/constants/theme";
-import {
-  TouchableOpacity,
-  Text,
-  ActivityIndicator,
-  ViewStyle,
+import { 
+  TouchableOpacity, 
+  Text, 
+  ActivityIndicator, 
+  ViewStyle, 
+  Platform 
 } from "react-native";
+import { Colors } from "@/constants/theme";
 
 interface CustomButtonProps {
   title: string;
@@ -24,73 +25,53 @@ export default function CustomButton({
   loading = false,
   style,
 }: CustomButtonProps) {
-
+  
   const theme = Colors.dark;
 
-  //  background style
-  const getBackgroundStyle = () => {
-    if (disabled) {
-      return { backgroundColor: "#333" };
-    }
-
-    switch (variant) {
-      case "primary":
-        return { backgroundColor: theme.primary };
-
-      case "secondary":
-        return {
-          backgroundColor: "transparent",
-          borderWidth: 1,
-          borderColor: theme.primary,
-        };
-
-      case "danger":
-        return { backgroundColor: "#EF4444" };
-
-      default:
-        return { backgroundColor: theme.primary };
-    }
+  // จัดกลุ่ม Class ตาม Variant
+  const containerVariants = {
+    primary: "bg-[#A3E635]", 
+    secondary: "bg-transparent border-2 border-[#A3E635]",
+    danger: "bg-red-500",
   };
 
-  // text color
-  const getTextStyle = () => {
-    if (disabled) {
-      return { color: "#666" };
-    }
-
-    if (variant === "primary") {
-      return { color: "#000" }; // พื้นเขียว → ตัวหนังสือดำ
-    }
-
-    return { color: theme.primary };
+  const textVariants = {
+    primary: "text-black",
+    secondary: "text-[#A3E635]",
+    danger: "text-white",
   };
+
+  // Logic สำหรับสี Loading Indicator
+  const loaderColor = variant === "primary" ? "#000" : (variant === "danger" ? "#fff" : "#A3E635");
 
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled || loading}
-      activeOpacity={0.8}
-      className="w-full py-4 rounded-xl flex-row justify-center items-center"
+      activeOpacity={0.7}
+      // ใช้ className แบบ Dynamic ตาม Variant และสถานะ Disabled
+      className={`
+        w-full py-4 rounded-2xl flex-row justify-center items-center
+        ${disabled ? "bg-neutral-800 opacity-60" : containerVariants[variant]}
+      `}
       style={[
-        getBackgroundStyle(),
-
-        // ✨ Glow effect
-        {
-          shadowColor: theme.primary,
-          shadowOpacity: disabled ? 0 : 0.4,
-          shadowRadius: 10,
-          elevation: disabled ? 0 : 5,
+        // เงา (Shadow) สำหรับ iOS/Android ที่ NativeWind บางทีคุมความฟุ้งยาก
+        !disabled && variant !== "secondary" && {
+          shadowColor: variant === "danger" ? "#EF4444" : "#A3E635",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+          elevation: 6,
         },
-
         style,
       ]}
     >
       {loading ? (
-        <ActivityIndicator
-          color={variant === "primary" ? "#000" : theme.primary}
-        />
+        <ActivityIndicator color={loaderColor} size="small" />
       ) : (
-        <Text style={getTextStyle()} className="font-bold text-lg">
+        <Text 
+          className={`text-lg font-bold tracking-tight ${disabled ? "text-neutral-500" : textVariants[variant]}`}
+        >
           {title}
         </Text>
       )}

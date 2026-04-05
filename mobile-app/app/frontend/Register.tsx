@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput,
-  StyleSheet, ScrollView, KeyboardAvoidingView,
-  Platform, Alert
+  ScrollView, KeyboardAvoidingView,
+  Platform, Alert, TouchableOpacity
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors } from '../constants/theme';
 
-// ✅ import component
-import Checkbox from '../components/ui/checkbox';
+// ✅ Import Components ตามชื่อเบสิค
 import CustomButton from '../components/ui/custombutton';
- 
+import Checkbox from '../components/ui/checkbox';
 
+// ข้อมูลงานห้ามเปลี่ยน
 interface FormData {
   username: string;
   email: string;
@@ -29,15 +28,6 @@ interface FormErrors {
 export default function RegisterScreen() {
   const router = useRouter();
   
-  // แทนที่ const theme = Colors.dark; ด้วยก้อนนี้:
-const theme = {
-  primary: Colors.neon.green,      // ใช้สีเขียวจากหมวด neon
-  background: Colors.base.black,   // ใช้สีดำจากหมวด base
-  border: Colors.border.default,     // (สมมติชื่อ) หรือใช้สีที่คุณตั้งไว้ในหมวด border
-  text: Colors.text.main,          // ใช้สีข้อความหลัก
-};
-  const styles = createStyles(theme);
-
   const [formData, setFormData] = useState<FormData>({
     username: '',
     email: '',
@@ -49,24 +39,20 @@ const theme = {
   const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
   const [loading, setLoading] = useState(false);
 
+  // Logic Validation เดิมเป๊ะ ห้ามเปลี่ยน
   const validateField = (name: keyof FormData, value: any) => {
     switch (name) {
       case 'username':
         if (!value) return 'กรุณากรอก username';
         return;
-
       case 'email':
         if (!value) return 'กรุณากรอก email';
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
-          return 'รูปแบบ email ไม่ถูกต้อง';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'รูปแบบ email ไม่ถูกต้อง';
         return;
-
       case 'password':
         if (!value) return 'กรุณากรอกรหัสผ่าน';
-        if (value.length < 6)
-          return 'รหัสผ่านต้องมากกว่า 6 ตัว';
+        if (value.length < 6) return 'รหัสผ่านต้องมากกว่า 6 ตัว';
         return;
-
       case 'accept':
         if (!value) return 'กรุณายอมรับ Privacy Policy';
         return;
@@ -75,7 +61,6 @@ const theme = {
 
   const handleChange = (name: keyof FormData, value: any) => {
     setFormData(prev => ({ ...prev, [name]: value }));
-
     if (touched[name]) {
       const error = validateField(name, value);
       setErrors(prev => ({ ...prev, [name]: error }));
@@ -84,7 +69,6 @@ const theme = {
 
   const handleBlur = (name: keyof FormData) => {
     setTouched(prev => ({ ...prev, [name]: true }));
-
     const error = validateField(name, formData[name]);
     setErrors(prev => ({ ...prev, [name]: error }));
   };
@@ -92,23 +76,11 @@ const theme = {
   const validateForm = () => {
     let valid = true;
     const newErrors: FormErrors = {};
-
     (Object.keys(formData) as (keyof FormData)[]).forEach((key) => {
       const error = validateField(key, formData[key]);
-      if (error) {
-        newErrors[key] = error;
-        valid = false;
-      }
+      if (error) { newErrors[key] = error; valid = false; }
     });
-
     setErrors(newErrors);
-
-    const allTouched: any = {};
-    Object.keys(formData).forEach(key => {
-      allTouched[key] = true;
-    });
-    setTouched(allTouched);
-
     return valid;
   };
 
@@ -117,13 +89,11 @@ const theme = {
       Alert.alert("ข้อมูลไม่ถูกต้อง");
       return;
     }
-
     try {
       setLoading(true);
-
-      Alert.alert("สำเร็จ 🎉");
-      router.push('/frontend/SetUpYourHealthProfile'); // เปลี่ยนเส้นทางไปหน้า SetupYourHealth
-
+      // ตัวอย่างการเชื่อมต่อ Supabase (ข้อมูลงานคงเดิม)
+      Alert.alert("สำเร็จ 🎉", "ลงทะเบียนเรียบร้อยแล้ว");
+      router.push('./frontend/SetUpYourHealthProfile'); 
     } catch (err: any) {
       Alert.alert("Error", err.message);
     } finally {
@@ -133,136 +103,118 @@ const theme = {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      className="flex-1 bg-black"
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.formContainer}>
-          <Text style={styles.title}>Register</Text>
+      <ScrollView 
+        contentContainerStyle={{ flexGrow: 1 }} 
+        keyboardShouldPersistTaps="handled"
+        className="bg-black"
+      >
+        <View className="flex-1 p-8 pt-20">
+          <Text className="text-5xl font-black text-[#A3E635] mb-12 italic tracking-tighter">
+            REGISTER
+          </Text>
 
-          {/* Username */}
-          <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Username</Text>
-            <TextInput
-              style={styles.textInput}
-              value={formData.username}
-              onChangeText={(v) => handleChange('username', v)}
-              onBlur={() => handleBlur('username')}
+          {/* ส่วนของ Input Fields */}
+          <View className="gap-y-6">
+            
+            {/* Username */}
+            <View>
+              <View className={`relative border-2 rounded-2xl px-4 py-3 ${touched.username && errors.username ? 'border-red-500' : 'border-neutral-700'}`}>
+                <Text className="absolute -top-3 left-3 bg-black px-2 text-sm font-bold text-[#A3E635]">
+                  Username
+                </Text>
+                <TextInput
+                  className="text-white text-lg py-1"
+                  value={formData.username}
+                  onChangeText={(v) => handleChange('username', v)}
+                  onBlur={() => handleBlur('username')}
+                  placeholder="Enter your username"
+                  placeholderTextColor="#444"
+                />
+              </View>
+              {touched.username && errors.username && (
+                <Text className="text-red-500 text-xs mt-1 ml-2">{errors.username}</Text>
+              )}
+            </View>
+
+            {/* Email */}
+            <View>
+              <View className={`relative border-2 rounded-2xl px-4 py-3 ${touched.email && errors.email ? 'border-red-500' : 'border-neutral-700'}`}>
+                <Text className="absolute -top-3 left-3 bg-black px-2 text-sm font-bold text-[#A3E635]">
+                  Email
+                </Text>
+                <TextInput
+                  className="text-white text-lg py-1"
+                  value={formData.email}
+                  onChangeText={(v) => handleChange('email', v)}
+                  onBlur={() => handleBlur('email')}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholder="example@mail.com"
+                  placeholderTextColor="#444"
+                />
+              </View>
+              {touched.email && errors.email && (
+                <Text className="text-red-500 text-xs mt-1 ml-2">{errors.email}</Text>
+              )}
+            </View>
+
+            {/* Password */}
+            <View>
+              <View className={`relative border-2 rounded-2xl px-4 py-3 ${touched.password && errors.password ? 'border-red-500' : 'border-neutral-700'}`}>
+                <Text className="absolute -top-3 left-3 bg-black px-2 text-sm font-bold text-[#A3E635]">
+                  Password
+                </Text>
+                <TextInput
+                  className="text-white text-lg py-1"
+                  secureTextEntry
+                  value={formData.password}
+                  onChangeText={(v) => handleChange('password', v)}
+                  onBlur={() => handleBlur('password')}
+                  placeholder="••••••••"
+                  placeholderTextColor="#444"
+                />
+              </View>
+              {touched.password && errors.password && (
+                <Text className="text-red-500 text-xs mt-1 ml-2">{errors.password}</Text>
+              )}
+            </View>
+          </View>
+
+          {/* --- การเรียกใช้ Checkbox --- */}
+          <View className="mt-8">
+            <Checkbox
+              label="I agree to Privacy Policy"
+              checked={formData.accept}
+              touched={touched.accept}
+              error={errors.accept}
+              onPress={() => handleChange('accept', !formData.accept)}
             />
           </View>
-          {touched.username && errors.username && (
-            <Text style={styles.error}>{errors.username}</Text>
-          )}
 
-          {/* Email */}
-          <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Email</Text>
-            <TextInput
-              style={styles.textInput}
-              value={formData.email}
-              onChangeText={(v) => handleChange('email', v)}
-              onBlur={() => handleBlur('email')}
+          {/* --- การเรียกใช้ CustomButton --- */}
+          <View className="mt-4">
+            <CustomButton
+              title={loading ? "Creating Account..." : "REGISTER"}
+              onPress={handleRegister}
+              variant="primary"
+              loading={loading}
+              disabled={loading}
             />
           </View>
-          {touched.email && errors.email && (
-            <Text style={styles.error}>{errors.email}</Text>
-          )}
 
-          {/* Password */}
-          <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Password</Text>
-            <TextInput
-              style={styles.textInput}
-              secureTextEntry
-              value={formData.password}
-              onChangeText={(v) => handleChange('password', v)}
-              onBlur={() => handleBlur('password')}
-            />
+          {/* Footer Link */}
+          <View className="mt-8 flex-row justify-center items-center">
+            <Text className="text-neutral-500 text-base">Already have an account? </Text>
+            <TouchableOpacity onPress={() => router.push('./frontend/login')}>
+              <Text className="text-[#A3E635] font-bold text-base">Login</Text>
+            </TouchableOpacity>
           </View>
-          {touched.password && errors.password && (
-            <Text style={styles.error}>{errors.password}</Text>
-          )}
-
-          {/* ✅ Checkbox ใหม่ */}
-          <Checkbox
-            label="I agree to Privacy Policy"
-            checked={formData.accept}
-            onPress={() => handleChange('accept', !formData.accept)}
-            error={errors.accept}
-            touched={touched.accept}
-          />
-
-          {/* ✅ ปุ่ม Register */}
-          <CustomButton
-            title="Register"
-            onPress={handleRegister}
-            style={{ backgroundColor: theme.primary }}
-            loading={loading}
-/>
 
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
-
-// styles
-// styles
-const createStyles = (theme: any) =>
-  StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.background },
-    
-    // เพิ่ม scrollContent ที่หายไป
-    scrollContent: {
-      flexGrow: 1,
-    },
-
-    formContainer: {
-      flex: 1,
-      backgroundColor: theme.background,
-      padding: 25,
-      paddingTop: 60,
-    },
-
-    title: {
-      fontSize: 35,
-      fontWeight: '900',
-      color: theme.primary,
-      marginBottom: 40,
-    },
-
-    inputWrapper: {
-      borderWidth: 1.5,
-      borderColor: theme.border,
-      borderRadius: 15,
-      paddingHorizontal: 15,
-      paddingVertical: 12,
-      marginBottom: 25,
-      backgroundColor: 'transparent',
-    },
-
-    inputLabel: {
-      position: 'absolute',
-      top: -12,
-      left: 12,
-      backgroundColor: theme.background,
-      paddingHorizontal: 8,
-      fontSize: 14,
-      fontWeight: '600',
-      color: theme.primary,
-    },
-    
-    textInput: {
-      color: '#FFFFFF',
-      fontSize: 18,
-    },
-
-    // เพิ่ม error ที่หายไป
-    error: {
-      color: '#EF4444', // สีแดง danger
-      fontSize: 12,
-      marginTop: -20, // ขยับขึ้นไปชิด inputWrapper
-      marginBottom: 15,
-      marginLeft: 5,
-    },
-  });
