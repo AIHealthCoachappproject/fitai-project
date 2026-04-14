@@ -14,6 +14,7 @@ export default function TabLayout() {
       <Tabs.Screen name="AiWorkoutCoach" />
       <Tabs.Screen name="TrackProgress" />
       <Tabs.Screen name="AIHealthCoachChat" />
+      <Tabs.Screen name="Profile" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -4,6 +4,7 @@ import {
   ScrollView,
   ImageBackground,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MetricCard from "@/components/dashboard/MetricCard";
@@ -12,9 +13,11 @@ import {
   FontAwesome5,
   Ionicons,
 } from "@expo/vector-icons";
-import React from "react";
-import { useLocalSearchParams } from "expo-router";
+import React, { useMemo, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { COLORS } from "@/constants/theme";
+import { useProfile } from "@/context/ProfileContext";
+import EditHealthModal from "@/components/dashboard/EditHealthModal";
 
 const defaultData = {
   bmi: "21.0",
@@ -35,16 +38,41 @@ const getBmiStatus = (bmiValue: number) => {
 };
 
 const TodayHealthStatus = () => {
-  const { bmi } = useLocalSearchParams();
+  const router = useRouter();
+  const { bmi: paramBmi } = useLocalSearchParams();
+  const { profile, updateProfileField, calculateBMI } = useProfile();
+  const [showEditHealthModal, setShowEditHealthModal] = useState(false);
   const brandGreen = COLORS.primary;
-  const parsedBmi = bmi ? parseFloat(String(bmi)) : Number.NaN;
-  const bmiValue = Number.isFinite(parsedBmi)
-    ? parsedBmi
-    : parseFloat(defaultData.bmi);
+
+  // Use BMI from profile context, fallback to params, then default
+  const bmiValue = useMemo(() => {
+    if (profile.bmi && profile.bmi !== "0") {
+      return parseFloat(profile.bmi);
+    }
+    if (paramBmi) {
+      const parsed = parseFloat(String(paramBmi));
+      return Number.isFinite(parsed) ? parsed : parseFloat(defaultData.bmi);
+    }
+    return parseFloat(defaultData.bmi);
+  }, [profile.bmi, paramBmi]);
+
   const userData = {
     ...defaultData,
     bmi: bmiValue.toFixed(1),
     bmiStatus: getBmiStatus(bmiValue),
+  };
+
+  const handleSaveHealth = (height: string, weight: string, activityLevel: string) => {
+    updateProfileField('height', height);
+    updateProfileField('weight', weight);
+    updateProfileField('activityLevel', activityLevel);
+    setTimeout(() => {
+      calculateBMI();
+    }, 0);
+  };
+
+  const handleEditBMI = () => {
+    setShowEditHealthModal(true);
   };
 
   return (
@@ -53,8 +81,8 @@ const TodayHealthStatus = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}
       >
-        {/* ─── Header ─── */}
-        <View className="h-48 w-full overflow-hidden mb-4">
+        {/* ─── Header with Profile Button ─── */}
+        <View className="h-48 w-full overflow-hidden mb-4 relative">
           <ImageBackground
             source={{
               uri: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800",
@@ -63,6 +91,31 @@ const TodayHealthStatus = () => {
             style={{ borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden' }}
           >
             <View className="absolute inset-0 bg-black/55" />
+            
+            {/* Profile Button - Top Right */}
+            <TouchableOpacity
+              onPress={() => router.push("/(tabs)/Profile")}
+              className="absolute top-6 right-5 z-10"
+              activeOpacity={0.7}
+            >
+              <View
+                className="w-14 h-14 rounded-full border-2 justify-center items-center"
+                style={{
+                  borderColor: COLORS.primary,
+                  backgroundColor: COLORS.secondary,
+                }}
+              >
+                {profile.profileImage ? (
+                  <Image
+                    source={{ uri: profile.profileImage }}
+                    className="w-full h-full rounded-full"
+                  />
+                ) : (
+                  <Ionicons name="person" size={24} color={COLORS.primary} />
+                )}
+              </View>
+            </TouchableOpacity>
+
             <Text className="text-white text-3xl font-black leading-9 px-5 pb-5">
               Today Health{"\n"}Status
             </Text>
@@ -72,15 +125,18 @@ const TodayHealthStatus = () => {
         <View className="px-4 gap-3">
           {/* ─── BMI & Calories ─── */}
           <View className="flex-row gap-3">
-            <MetricCard
-              label="Current BMI"
-              value={userData.bmi}
-              status={userData.bmiStatus}
-              statusColor="text-cyan-400"
-              icon={
-                <MaterialCommunityIcons name="scale-bathroom" size={26} color="#22D3EE" />
-              }
-            />
+            <View className="flex-1">
+              <MetricCard
+                label="Current BMI"
+                value={userData.bmi}
+                status={userData.bmiStatus}
+                statusColor="text-cyan-400"
+                icon={
+                  <MaterialCommunityIcons name="scale-bathroom" size={26} color="#22D3EE" />
+                }
+                onPress={handleEditBMI}
+              />
+            </View>
             <MetricCard
               label="Calories Today"
               value={userData.caloriesIn}
@@ -164,6 +220,16 @@ const TodayHealthStatus = () => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Edit Health Modal - for editing height, weight, activity level */}
+      <EditHealthModal
+        visible={showEditHealthModal}
+        onClose={() => setShowEditHealthModal(false)}
+        onSave={handleSaveHealth}
+        initialHeight={profile.height}
+        initialWeight={profile.weight}
+        initialActivityLevel={profile.activityLevel}
+      />
     </SafeAreaView>
   );
 };

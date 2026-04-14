@@ -7,9 +7,11 @@ import FormField from "@/components/ui/FormField";
 import CustomButton from "@/components/ui/CustomButton";
 import SelectButton from "@/components/ui/SelectButton";
 import { GENDER_OPTIONS, ACTIVITY_LEVELS } from "@/components/constants/healthData";
+import { useProfile } from "@/context/ProfileContext";
 
 const SetUpYourHealthProfile = () => {
   const router = useRouter();
+  const { setProfile } = useProfile();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<any>({});
 
@@ -48,11 +50,23 @@ const SetUpYourHealthProfile = () => {
   setIsSubmitting(true);
 
   setTimeout(() => {
+    // Save to Profile Context
+    setProfile({
+      name: form.name,
+      age: form.age,
+      gender: form.gender,
+      activityLevel: form.activityLevel,
+      height: form.height,
+      weight: form.weight,
+      bmi: currentBMI,
+      profileImage: null,
+    });
+
     setIsSubmitting(false);
     router.push({
       pathname: "/(onboarding)/ChooseYourBodyGoal",
       params: {
-        bmi: currentBMI,          // ค่าที่คำนวณไว้อยู่แล้วในหน้านี้
+        bmi: currentBMI,
         weight: form.weight,
         height: form.height,
       }
