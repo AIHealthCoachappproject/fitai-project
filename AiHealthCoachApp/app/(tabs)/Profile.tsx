@@ -137,6 +137,71 @@ const Profile = () => {
             </Text>
           </View>
         </View>
+
+        {/* Health Metrics */}
+        <View className="mx-5 mb-6">
+          <Text style={{ fontSize: 18, fontWeight: '800', color: primaryColor, marginBottom: 12 }}>
+            Health Metrics
+          </Text>
+
+          {/* Height & Weight Row */}
+          <View className="flex-row gap-3 mb-3">
+            {/* Height Card */}
+            <View className="flex-1 p-5 rounded-2xl border" style={{ backgroundColor: COLORS.secondary, borderColor: 'rgba(96, 165, 250, 0.2)' }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: primaryColor, marginBottom: 8, letterSpacing: 0.5 }}>
+                HEIGHT
+              </Text>
+              <View className="flex-row items-center justify-between">
+                <Text style={{ fontSize: 20, fontWeight: '800', color: whiteText }}>
+                  {profile.height || 'Not Set'}
+                  <Text style={{ fontSize: 12, color: mutedText, fontWeight: '600' }}> cm</Text>
+                </Text>
+                <Ionicons name="fitness" size={28} color="#60A5FA" />
+              </View>
+            </View>
+
+            {/* Weight Card */}
+            <View className="flex-1 p-5 rounded-2xl border" style={{ backgroundColor: COLORS.secondary, borderColor: 'rgba(244, 114, 182, 0.2)' }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: primaryColor, marginBottom: 8, letterSpacing: 0.5 }}>
+                WEIGHT
+              </Text>
+              <View className="flex-row items-center justify-between">
+                <Text style={{ fontSize: 20, fontWeight: '800', color: whiteText }}>
+                  {profile.weight || 'Not Set'}
+                  <Text style={{ fontSize: 12, color: mutedText, fontWeight: '600' }}> kg</Text>
+                </Text>
+                <Ionicons name="scale" size={28} color="#F472B6" />
+              </View>
+            </View>
+          </View>
+
+          {/* BMI Card */}
+          <View className="p-5 rounded-2xl border" style={{ backgroundColor: COLORS.secondary, borderColor: 'rgba(34, 211, 238, 0.2)' }}>
+            <View className="flex-row items-center justify-between">
+              <View className="flex-1">
+                <Text style={{ fontSize: 14, fontWeight: '800', color: primaryColor, marginBottom: 8, letterSpacing: 0.5 }}>
+                  BMI
+                </Text>
+                <Text style={{ fontSize: 20, fontWeight: '800', color: whiteText }}>
+                  {profile.bmi || 'Not Set'}
+                </Text>
+              </View>
+              <Ionicons name="scale-outline" size={32} color="#22D3EE" />
+            </View>
+          </View>
+
+          {/* Edit Button */}
+          <TouchableOpacity
+            onPress={() => setShowEditHealthModal(true)}
+            className="mt-4 flex-row items-center justify-center px-5 py-3 rounded-full"
+            style={{ backgroundColor: primaryColor }}
+          >
+            <Ionicons name="create-outline" size={18} color={COLORS.black} />
+            <Text style={{ color: COLORS.black, fontWeight: '700', fontSize: 14, marginLeft: 8 }}>
+              Edit Health Metrics
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       {/* Modals */}
