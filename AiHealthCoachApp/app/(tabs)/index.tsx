@@ -4,7 +4,6 @@ import {
   ScrollView,
   ImageBackground,
   TouchableOpacity,
-  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MetricCard from "@/components/dashboard/MetricCard";
@@ -13,113 +12,40 @@ import {
   FontAwesome5,
   Ionicons,
 } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useLocalSearchParams } from "expo-router";
-import { supabase } from "@/api/supabase";
 import { COLORS } from "@/constants/theme";
 
 const defaultData = {
-  bmi: "0.0",
+  bmi: "21.0",
   bmiStatus: "Normal",
-  caloriesIn: 0,
+  caloriesIn: 1450,
   calorieGoal: 2000,
-  workoutProgress: "0/5",
-  workoutPercentage: "0%",
-  streak: 0,
-  streakBest: 0,
+  workoutProgress: "3/5",
+  workoutPercentage: "70%",
+  streak: 10,
+  streakBest: 15,
+};
+
+const getBmiStatus = (bmiValue: number) => {
+  if (bmiValue >= 30) return "Obese";
+  if (bmiValue >= 25) return "Overweight";
+  if (bmiValue < 18.5 && bmiValue > 0) return "Underweight";
+  return "Normal";
 };
 
 const TodayHealthStatus = () => {
-  const [loading, setLoading] = useState(true);
-  const [userData, setUserData] = useState<any>(null);
   const { bmi } = useLocalSearchParams();
   const brandGreen = COLORS.primary;
-
-  useEffect(() => {
-    if (bmi) {
-      const bmiNum = parseFloat(bmi as string);
-      let bmiStatus = "Normal";
-      if (bmiNum >= 30) bmiStatus = "Obese";
-      else if (bmiNum >= 25) bmiStatus = "Overweight";
-      else if (bmiNum < 18.5) bmiStatus = "Underweight";
-      setUserData({ ...defaultData, bmi: bmiNum.toFixed(1), bmiStatus });
-      setLoading(false);
-    } else {
-      fetchHealthData();
-    }
-  }, [bmi]);
-
-  const fetchHealthData = async () => {
-    try {
-      setLoading(true);
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        setUserData(defaultData);
-        return;
-      }
-
-      const [profileRes, weightRes, summaryRes] = await Promise.all([
-        supabase
-          .from("user_profiles")
-          .select("height_cm, daily_calorie_goal")
-          .eq("user_id", user.id)
-          .single(),
-        supabase
-          .from("weight_logs")
-          .select("weight_kg")
-          .eq("user_id", user.id)
-          .order("logged_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-        supabase
-          .from("daily_summaries")
-          .select("total_calories_in, calorie_goal, streak_day")
-          .eq("user_id", user.id)
-          .order("summary_date", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-      ]);
-
-      const profile = profileRes.data;
-      const latestWeight = weightRes.data;
-      const today = summaryRes.data;
-
-      const w = latestWeight?.weight_kg ?? 0;
-      const hM = (profile?.height_cm ?? 170) / 100;
-      const bmiValue = w > 0 ? w / (hM * hM) : 0;
-
-      let bmiStatus = "Normal";
-      if (bmiValue >= 30) bmiStatus = "Obese";
-      else if (bmiValue >= 25) bmiStatus = "Overweight";
-      else if (bmiValue < 18.5 && bmiValue > 0) bmiStatus = "Underweight";
-
-      setUserData({
-        bmi: bmiValue > 0 ? bmiValue.toFixed(1) : "0.0",
-        bmiStatus,
-        caloriesIn: today?.total_calories_in ?? 0,
-        calorieGoal: today?.calorie_goal ?? profile?.daily_calorie_goal ?? 2000,
-        workoutProgress: "3/5",
-        workoutPercentage: "70%",
-        streak: today?.streak_day ?? 10,
-        streakBest: 15,
-      });
-    } catch (error) {
-      console.error("Error:", error);
-      setUserData(defaultData);
-    } finally {
-      setLoading(false);
-    }
+  const parsedBmi = bmi ? parseFloat(String(bmi)) : Number.NaN;
+  const bmiValue = Number.isFinite(parsedBmi)
+    ? parsedBmi
+    : parseFloat(defaultData.bmi);
+  const userData = {
+    ...defaultData,
+    bmi: bmiValue.toFixed(1),
+    bmiStatus: getBmiStatus(bmiValue),
   };
-
-  if (loading || !userData) {
-    return (
-      <View className="flex-1 bg-background justify-center items-center">
-        <ActivityIndicator color={brandGreen} size="large" />
-      </View>
-    );
-  }
 
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -144,7 +70,7 @@ const TodayHealthStatus = () => {
         </View>
 
         <View className="px-4 gap-3">
-          {/* ─── แถว 1: BMI & Calories ─── */}
+          {/* ─── BMI & Calories ─── */}
           <View className="flex-row gap-3">
             <MetricCard
               label="Current BMI"
@@ -166,7 +92,7 @@ const TodayHealthStatus = () => {
             />
           </View>
 
-          {/* ─── แถว 2: Workout & Streak ─── */}
+          {/* ─── Workout & Streak ─── */}
           <View className="flex-row gap-3">
             <MetricCard
               label="Workout Progress"

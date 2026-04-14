@@ -128,7 +128,7 @@ const SetUpYourHealthProfile = () => {
                   setForm({ ...form, activityLevel: level.label });
                   if (errors.activityLevel) setErrors({ ...errors, activityLevel: undefined });
                 }}
-                // ✅ ปรับความสูงและดีไซน์ให้มนรับกับช่อง Input
+                // ปรับความสูงและดีไซน์ให้มนรับกับช่อง Input
                 containerStyles="w-full h-20 items-start px-5 py-3 rounded-2xl" 
                 description={level.desc}
               />
@@ -179,7 +179,7 @@ const SetUpYourHealthProfile = () => {
           title="Continue"
           onPress={handleContinue}
           isLoading={isSubmitting}
-          // ✅ ปรับ h-16 และ rounded-full เพื่อความพรีเมียมและกดง่าย
+          //  ปรับ h-16 และ rounded-full เพื่อความพรีเมียมและกดง่าย
           containerStyles="rounded-full h-16 mb-10" 
         />
       </ScrollView>

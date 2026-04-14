@@ -29,7 +29,7 @@ const SelectButton = ({
         isSelected ? "border-primary bg-primary/10" : "border-secondary-text/20 bg-secondary"
       } ${containerStyles}`}
     >
-      {/*  แสดงไอคอนเฉพาะถ้ามีการส่งมา (ไม่กระทบหน้าเก่า) */}
+      {/*  แสดงไอคอนเฉพาะถ้ามีการส่งมา*/}
       {icon && (
         <View className="mr-4 w-10 h-10 items-center justify-center bg-background rounded-full">
           <Text className="text-xl">{icon}</Text> 
@@ -41,7 +41,7 @@ const SelectButton = ({
           {label}
         </Text>
         
-        {/*  แสดงคำอธิบายเฉพาะถ้ามีการส่งมา (ไม่กระทบหน้าเก่า) */}
+        {/*  แสดงคำอธิบายเฉพาะถ้ามีการส่งมา */}
         {description && (
           <Text className="text-secondary-text text-xs mt-1">{description}</Text>
         )}

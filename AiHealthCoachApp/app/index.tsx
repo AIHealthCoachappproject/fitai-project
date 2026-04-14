@@ -17,13 +17,13 @@ export default function Index() {
         </View>
 
         <View className="w-full max-w-[300px] space-y-4">
-          {/* ✅ เปลี่ยนมาใช้ variant="outline" ข้อความจะโชว์สีขาว/เขียวตามที่เราตั้งไว้ในแม่แบบ */}
+          
           <CustomButton
             title="Register"
             onPress={() => router.push("/(auth)/Register")}
             variant="outline"
-            containerStyles="border-primary" // ถ้าอยากให้ขอบเป็นสีเขียวสะท้อนแสงเหมือนเดิม
-            textStyles="text-primary"        // บังคับให้ข้อความเป็นสีเขียว
+            containerStyles="border-primary" 
+            textStyles="text-primary"       
           />
 
           <View className="mt-4">
