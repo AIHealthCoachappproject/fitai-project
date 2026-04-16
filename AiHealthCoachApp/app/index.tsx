@@ -16,7 +16,7 @@ export default function Index() {
           <View className="h-1 w-12 bg-primary mt-2 rounded-full" />
         </View>
 
-        <View className="w-full max-w-[300px] space-y-4">
+        <View className="w-full max-w-xs space-y-4">
           
           <CustomButton
             title="Register"

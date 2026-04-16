@@ -17,7 +17,7 @@ import MetricCard from '@/components/dashboard/MetricCard';
 
 const Profile = () => {
   const router = useRouter();
-  const { profile, updateProfileField, calculateBMI } = useProfile();
+  const { profile, setProfile, updateProfileField, calculateBMI } = useProfile();
   const [showEditHealthModal, setShowEditHealthModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
 
@@ -28,12 +28,19 @@ const Profile = () => {
   const bgColor = '#0A0A0A';               // darker background
 
   const handleSaveHealth = (height: string, weight: string, activityLevel: string) => {
-    updateProfileField('height', height);
-    updateProfileField('weight', weight);
-    updateProfileField('activityLevel', activityLevel);
-    setTimeout(() => {
-      calculateBMI();
-    }, 0);
+    const weightNum = parseFloat(weight);
+    const heightNum = parseFloat(height) / 100;
+    const calculatedBmi = (weightNum > 0 && heightNum > 0)
+      ? (weightNum / (heightNum * heightNum)).toFixed(1)
+      : profile.bmi;
+
+    setProfile({
+      ...profile,
+      height,
+      weight,
+      activityLevel,
+      bmi: calculatedBmi,
+    });
   };
 
   const handleSavePhoto = (imageUri: string) => {
@@ -193,12 +200,12 @@ const Profile = () => {
           {/* Edit Button */}
           <TouchableOpacity
             onPress={() => setShowEditHealthModal(true)}
-            className="mt-4 flex-row items-center justify-center px-5 py-3 rounded-full"
+            className="mt-8 flex-row items-center justify-center px-5 py-3 rounded-full"
             style={{ backgroundColor: primaryColor }}
           >
             <Ionicons name="create-outline" size={18} color={COLORS.black} />
             <Text style={{ color: COLORS.black, fontWeight: '700', fontSize: 14, marginLeft: 8 }}>
-              Edit Health Metrics
+              Edit Health Info
             </Text>
           </TouchableOpacity>
         </View>

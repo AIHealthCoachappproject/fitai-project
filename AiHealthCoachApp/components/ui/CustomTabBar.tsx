@@ -20,7 +20,7 @@ const TAB_LABEL_MAP: Record<string, string> = {
 
 const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
   const currentRouteName = state.routes[state.index]?.name;
-  if (currentRouteName === 'AIHealthCoachChat') {
+  if (currentRouteName === 'AIHealthCoachChat' || currentRouteName === 'Profile' || currentRouteName === 'DailyPlanDetail') {
     return null;
   }
 

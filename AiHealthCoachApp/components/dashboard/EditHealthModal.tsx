@@ -52,11 +52,10 @@ const EditHealthModal: React.FC<EditHealthModalProps> = ({
   const handleSave = () => {
     if (!validate()) return;
     setIsSubmitting(true);
-    setTimeout(() => {
-      onSave(height, weight, activityLevel);
-      setIsSubmitting(false);
-      onClose();
-    }, 800);
+    // เรียก onSave ทันที ไม่ต้อง setTimeout
+    onSave(height, weight, activityLevel);
+    setIsSubmitting(false);
+    onClose();
   };
 
   const handleClose = () => {
@@ -89,8 +88,11 @@ const EditHealthModal: React.FC<EditHealthModalProps> = ({
                 title="Height (cm)"
                 value={height}
                 placeholder="cm"
+                keyboardType="numeric"
                 handleChangeText={(e) => {
-                  setHeight(e);
+                  // Allow only digits
+                  const numericValue = e.replace(/[^0-9]/g, '');
+                  setHeight(numericValue);
                   if (errors.height) setErrors({ ...errors, height: undefined });
                 }}
               />
@@ -106,8 +108,11 @@ const EditHealthModal: React.FC<EditHealthModalProps> = ({
                 title="Weight (kg)"
                 value={weight}
                 placeholder="kg"
+                keyboardType="numeric"
                 handleChangeText={(e) => {
-                  setWeight(e);
+                  // Allow only digits
+                  const numericValue = e.replace(/[^0-9]/g, '');
+                  setWeight(numericValue);
                   if (errors.weight) setErrors({ ...errors, weight: undefined });
                 }}
               />

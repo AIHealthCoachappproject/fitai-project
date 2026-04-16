@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import CustomButton from "@/components/ui/CustomButton";
 import SelectButton from "@/components/ui/SelectButton";
+import { useWorkoutPlan } from "@/context/WorkoutPlanContext";
 
 const BODY_GOALS = [
   { id: "weight_loss", label: "Weight Loss", icon: "🏃", desc: "Burn fat and get lean" },
@@ -14,6 +15,7 @@ const BODY_GOALS = [
 
 const ChooseYourBodyGoal = () => {
   const router = useRouter();
+  const { setGoal } = useWorkoutPlan();
   const [selectedGoal, setSelectedGoal] = useState("");
   const [error, setError] = useState("");
 
@@ -22,8 +24,7 @@ const ChooseYourBodyGoal = () => {
       setError("กรุณาเลือกเป้าหมายของคุณ");
       return;
     }
-    // // บันทึกข้อมูล (ถ้าต้องการ) ก่อนไปหน้า loading
-    // console.log("Selected Goal:", selectedGoal);
+    setGoal(selectedGoal);
     router.push("/loading"); // ไปหน้า loading ที่จะนำไปสู่ Dashboard
   };
 

@@ -18,16 +18,15 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { COLORS } from "@/constants/theme";
 import { useProfile } from "@/context/ProfileContext";
 import EditHealthModal from "@/components/dashboard/EditHealthModal";
+import { useWorkoutPlan } from "@/context/WorkoutPlanContext";
+import DailyPlanCard from "@/components/dashboard/DailyPlanCard";
+import WeeklyGoalCard from "@/components/dashboard/WeeklyGoalCard";
 
 const defaultData = {
   bmi: "21.0",
   bmiStatus: "Normal",
   caloriesIn: 1450,
   calorieGoal: 2000,
-  workoutProgress: "3/5",
-  workoutPercentage: "70%",
-  streak: 10,
-  streakBest: 15,
 };
 
 const getBmiStatus = (bmiValue: number) => {
@@ -40,8 +39,9 @@ const getBmiStatus = (bmiValue: number) => {
 const TodayHealthStatus = () => {
   const router = useRouter();
   const { bmi: paramBmi } = useLocalSearchParams();
-  const { profile, updateProfileField, calculateBMI } = useProfile();
+  const { profile, setProfile, updateProfileField, calculateBMI } = useProfile();
   const [showEditHealthModal, setShowEditHealthModal] = useState(false);
+  const { weeklyProgress, state: workoutState } = useWorkoutPlan();
   const brandGreen = COLORS.primary;
 
   // Use BMI from profile context, fallback to params, then default
@@ -63,12 +63,21 @@ const TodayHealthStatus = () => {
   };
 
   const handleSaveHealth = (height: string, weight: string, activityLevel: string) => {
-    updateProfileField('height', height);
-    updateProfileField('weight', weight);
-    updateProfileField('activityLevel', activityLevel);
-    setTimeout(() => {
-      calculateBMI();
-    }, 0);
+    // คำนวณ BMI ก่อน
+    const weightNum = parseFloat(weight);
+    const heightNum = parseFloat(height) / 100;
+    const calculatedBmi = (weightNum > 0 && heightNum > 0) 
+      ? (weightNum / (heightNum * heightNum)).toFixed(1)
+      : "0";
+    
+    // อัปเดท profile ทั้งหมดพร้อมกันในครั้งเดียว
+    setProfile({
+      ...profile,
+      height,
+      weight,
+      activityLevel,
+      bmi: calculatedBmi,
+    });
   };
 
   const handleEditBMI = () => {
@@ -79,10 +88,10 @@ const TodayHealthStatus = () => {
     <SafeAreaView className="flex-1 bg-background">
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
       >
         {/* ─── Header with Profile Button ─── */}
-        <View className="h-48 w-full overflow-hidden mb-4 relative">
+        <View className="h-56 w-full overflow-hidden mb-6 relative">
           <ImageBackground
             source={{
               uri: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800",
@@ -116,7 +125,7 @@ const TodayHealthStatus = () => {
               </View>
             </TouchableOpacity>
 
-            <Text className="text-white text-3xl font-black leading-9 px-5 pb-5">
+            <Text className="text-white text-3xl font-black leading-9 px-5 pb-6">
               Today Health{"\n"}Status
             </Text>
           </ImageBackground>
@@ -125,64 +134,70 @@ const TodayHealthStatus = () => {
         <View className="px-4 gap-3">
           {/* ─── BMI & Calories ─── */}
           <View className="flex-row gap-3">
-            <View className="flex-1">
+            <View className="flex-1" style={{ height: 140 }}>
               <MetricCard
                 label="Current BMI"
                 value={userData.bmi}
                 status={userData.bmiStatus}
                 statusColor="text-cyan-400"
                 icon={
-                  <MaterialCommunityIcons name="scale-bathroom" size={26} color="#22D3EE" />
+                  <MaterialCommunityIcons name="scale-bathroom" size={24} color="#22D3EE" />
                 }
                 onPress={handleEditBMI}
               />
             </View>
-            <MetricCard
-              label="Calories Today"
-              value={userData.caloriesIn}
-              status={`Goal: ${userData.calorieGoal} kcal`}
-              statusColor="text-primary"
-              icon={
-                <MaterialCommunityIcons name="food-apple" size={26} color={brandGreen} />
-              }
-            />
+            <View className="flex-1" style={{ height: 140 }}>
+              <MetricCard
+                label="Calories Today"
+                value={userData.caloriesIn}
+                status={`Goal: ${userData.calorieGoal} kcal`}
+                statusColor="text-primary"
+                icon={
+                  <MaterialCommunityIcons name="food-apple" size={24} color={brandGreen} />
+                }
+              />
+            </View>
           </View>
 
           {/* ─── Workout & Streak ─── */}
           <View className="flex-row gap-3">
-            <MetricCard
-              label="Workout Progress"
-              value={userData.workoutProgress}
-              status={userData.workoutPercentage}
-              statusColor="text-purple-400"
-              icon={<FontAwesome5 name="heart" size={22} color="#A855F7" />}
-            />
-            <MetricCard
-              label="Day Streak"
-              value={userData.streak}
-              status={`Personal Best: ${userData.streakBest}`}
-              statusColor="text-orange-400"
-              icon={
-                <MaterialCommunityIcons name="fire" size={26} color="#FB923C" />
-              }
-            />
+            <View className="flex-1" style={{ height: 140 }}>
+              <MetricCard
+                label="Workout Progress"
+                value={`${weeklyProgress}/7`}
+                status={`${Math.round((weeklyProgress / 7) * 100)}%`}
+                statusColor="text-purple-400"
+                icon={<FontAwesome5 name="heart" size={20} color="#A855F7" />}
+              />
+            </View>
+            <View className="flex-1" style={{ height: 140 }}>
+              <MetricCard
+                label="Day Streak"
+                value={workoutState.currentStreak}
+                status={`Personal Best: ${workoutState.personalBest}`}
+                statusColor="text-orange-400"
+                icon={
+                  <MaterialCommunityIcons name="fire" size={24} color="#FB923C" />
+                }
+              />
+            </View>
           </View>
 
           {/* ─── Scan Food ─── */}
           <TouchableOpacity
             activeOpacity={0.8}
-            className="bg-secondary rounded-[28px] border border-white/8 overflow-hidden"
+            className="bg-secondary rounded-3xl border border-white/8 overflow-hidden"
           >
-            <View className="flex-row items-center px-5 py-4 gap-4">
+            <View className="flex-row items-center px-5 py-6 gap-4">
               <View
                 style={{ backgroundColor: brandGreen }}
-                className="w-12 h-12 rounded-2xl justify-center items-center"
+                className="w-12 h-12 rounded-lg justify-center items-center"
               >
                 <Ionicons name="camera-outline" size={24} color="black" />
               </View>
               <View className="flex-1">
                 <Text className="text-whiteText text-base font-bold">Scan Food</Text>
-                <Text className="text-secondary-text text-xs mt-0.5">
+                <Text className="text-secondary-text text-xs mt-1">
                   Scan to calculate calories
                 </Text>
               </View>
@@ -190,33 +205,10 @@ const TodayHealthStatus = () => {
             </View>
           </TouchableOpacity>
 
-          {/* ─── Next Workout & Daily Plan ─── */}
+          {/* ─── Weekly Goal & Daily Plan ─── */}
           <View className="flex-row gap-3">
-            {/* Next Workout */}
-            <TouchableOpacity
-              activeOpacity={0.75}
-              className="flex-1 bg-secondary rounded-[28px] border border-white/8 p-5"
-              style={{ minHeight: 120, justifyContent: 'space-between' }}
-            >
-              <MaterialCommunityIcons name="dumbbell" size={22} color="white" />
-              <View>
-                <Text className="text-secondary-text text-[11px] mb-1">next: </Text>
-                <Text className="text-whiteText text-lg font-bold">Leg day</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Daily Plan */}
-            <TouchableOpacity
-              activeOpacity={0.75}
-              className="flex-1 bg-secondary rounded-[28px] border border-white/8 p-5"
-              style={{ minHeight: 120, justifyContent: 'space-between' }}
-            >
-              <MaterialCommunityIcons name="lightning-bolt" size={22} color={brandGreen} />
-              <View>
-                <Text className="text-secondary-text text-[11px] mb-1">goal</Text>
-                <Text className="text-whiteText text-lg font-bold">Daily Plan</Text>
-              </View>
-            </TouchableOpacity>
+            <WeeklyGoalCard />
+            <DailyPlanCard />
           </View>
         </View>
       </ScrollView>

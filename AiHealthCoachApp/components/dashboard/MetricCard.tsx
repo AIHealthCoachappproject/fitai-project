@@ -22,7 +22,7 @@ const MetricCard = ({
       onPress={onPress}
       disabled={!onPress}
       activeOpacity={0.7}
-      className={`bg-secondary p-5 rounded-[28px] border border-white/10 ${isFullWidth ? 'w-full' : 'w-[48%]'} ${containerStyles}`}
+      className={`flex-1 bg-secondary p-5 rounded-3xl border border-white/10 ${isFullWidth ? 'w-full' : ''} ${containerStyles}`}
     >
       <View className="flex-row justify-between items-start mb-4">
         <View className="flex-row items-baseline">
