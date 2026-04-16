@@ -35,9 +35,9 @@ export default function SettingsPage() {
           color="#3b82f6"
         />
         <StatCard
-          title="Total AI Chats"
-          value={stats.totalChats.toLocaleString()}
-          sub="AI conversations"
+          title="Total Meals"
+          value={stats.totalMeals.toLocaleString()}
+          sub="Logged meals"
           color="#f59e0b"
         />
       </div>
@@ -48,9 +48,14 @@ export default function SettingsPage() {
           <div>
             <h4 className="text-gray-400 mb-2">Tables</h4>
             <ul className="text-sm text-gray-300 space-y-1">
-              <li>• users - User accounts and profiles</li>
-              <li>• workouts - Workout sessions and progress</li>
+              <li>• users - User accounts</li>
+              <li>• user_profiles - Extended profile data</li>
+              <li>• workouts - Workout sessions</li>
+              <li>• food_logs - Meal tracking data</li>
+              <li>• weight_logs - Weight and BMI tracking</li>
               <li>• ai_chats - AI coach conversations</li>
+              <li>• daily_summaries - Daily summaries</li>
+              <li>• workout_plans - Workout plans</li>
             </ul>
           </div>
           <div>

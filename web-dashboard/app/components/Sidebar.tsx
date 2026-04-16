@@ -21,13 +21,13 @@ export default function Sidebar({ activePage, setPage }: SidebarProps) {
       items: [
         { label: 'Users', icon: Users, key: 'users' },
         { label: 'Content', icon: FileText, key: 'content' },
-        { label: 'AI Coach', icon: Zap, key: 'ai-coach' }
+        { label: 'Activity Feed', icon: Zap, key: 'ai-coach' }
       ]
     },
     {
       title: 'BUSINESS',
       items: [
-        { label: 'Revenue', icon: DollarSign, key: 'revenue' },
+        { label: 'User Overview', icon: DollarSign, key: 'revenue' },
         { label: 'Notifications', icon: AlertCircle, key: 'notifications' },
         { label: 'Settings', icon: Settings, key: 'settings' }
       ]

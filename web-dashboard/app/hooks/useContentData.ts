@@ -1,17 +1,8 @@
 import { useEffect, useState, useMemo } from 'react'
-import { supabase } from '@/lib/supabase'
-
-interface Workout {
-  id: string
-  user_id: string
-  title: string
-  duration: number
-  completed: boolean
-  created_at: string
-}
+import { getWorkouts, type DashboardWorkoutLog } from '@/lib/actions'
 
 export function UseContentData() {
-  const [workouts, setWorkouts] = useState<Workout[]>([])
+  const [workouts, setWorkouts] = useState<DashboardWorkoutLog[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [completedFilter, setCompletedFilter] = useState<string>('all')
@@ -25,14 +16,10 @@ export function UseContentData() {
       setLoading(true)
       setError(null)
 
-      const { data, error } = await supabase
-        .from('workouts')
-        .select('*')
-        .order('created_at', { ascending: false })
+      const { data, error } = await getWorkouts()
+      if (error) throw new Error(error)
 
-      if (error) throw error
-
-      setWorkouts(data || [])
+      setWorkouts(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch workouts')
     } finally {
