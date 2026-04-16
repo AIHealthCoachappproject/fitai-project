@@ -1,55 +1,59 @@
-import { View, Text, ScrollView, TouchableOpacity, } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
 import React, { useState } from "react";
 import { useRouter } from "expo-router";
 import FormField from "@/components/ui/FormField";
 import CustomButton from "@/components/ui/CustomButton";
 import { Ionicons } from "@expo/vector-icons";
+import { useAuthContext } from "@/context/AuthContext";
 
 const Login = () => {
   const router = useRouter();
+  const { signIn } = useAuthContext();
 
-  // 1. States สำหรับข้อมูล และ ข้อความ Error
   const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleLogin = () => {
-    // รีเซ็ต Error ก่อนตรวจสอบใหม่
+  const handleLogin = async () => {
     setErrors({ email: undefined, password: undefined });
     let isValid = true;
-    const newErrors: { email?: string; password?: string } = { email: undefined, password: undefined };
+    const newErrors: { email?: string; password?: string } = {};
 
-    // ตรวจสอบ Email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!form.email.trim()) {
-      newErrors.email = "กรุณากรอกอีเมล";
+      newErrors.email = "Please enter your email";
       isValid = false;
     } else if (!emailRegex.test(form.email)) {
-      newErrors.email = "กรุณากรอกอีเมลให้ถูกต้อง";
+      newErrors.email = "Please enter a valid email";
       isValid = false;
     }
 
-    // ตรวจสอบ Password
     if (!form.password.trim()) {
-      newErrors.password = "กรุณากรอกรหัสผ่าน";
+      newErrors.password = "Please enter your password";
       isValid = false;
     } else if (form.password.length < 6) {
-      newErrors.password = "รหัสผ่านอย่างน้อย 6 ตัว";
+      newErrors.password = "Password must be at least 6 characters";
       isValid = false;
     }
 
     if (!isValid) {
-      setErrors(newErrors); // แสดง Error สีแดงใต้ช่อง
+      setErrors(newErrors);
       return;
     }
 
     setIsSubmitting(true);
-    // Logic การเข้าสู่ระบบ
-    // ในหน้า Login.tsx
-    setTimeout(() => {
+    try {
+      const result = await signIn(form.email.trim(), form.password);
+      if (result.success) {
+        router.replace("/(tabs)");
+      } else {
+        Alert.alert("Login Failed", result.error ?? "Invalid credentials");
+      }
+    } catch (err) {
+      Alert.alert("Error", "Something went wrong. Please try again.");
+    } finally {
       setIsSubmitting(false);
-      router.push("/(onboarding)/SetUpYourHealthProfile"); // ไปหน้าตั้งค่าโปรไฟล์
-    }, 1000);
+    }
   };
 
   return (

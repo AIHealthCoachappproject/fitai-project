@@ -1,18 +1,17 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getDashboardStats, getWorkouts, type DashboardWorkoutLog } from '@/lib/actions'
 
 interface AnalyticsStats {
   totalWorkouts: number
-  completedWorkouts: number
-  totalMessages: number
+  totalMeals: number
+  totalUsers: number
 }
 
 export function UseAnalyticsData() {
   const [stats, setStats] = useState<AnalyticsStats>({
     totalWorkouts: 0,
-    completedWorkouts: 0,
-    totalMessages: 0
-
+    totalMeals: 0,
+    totalUsers: 0,
   })
   const [workoutsData, setWorkoutsData] = useState<{ date: string; count: number }[]>([])
   const [popularWorkouts, setPopularWorkouts] = useState<{ title: string; count: number }[]>([])
@@ -28,66 +27,47 @@ export function UseAnalyticsData() {
       setLoading(true)
       setError(null)
 
-      const { count: totalWorkouts } = await supabase
-        .from('workouts')
-        .select('*', { count: 'exact', head: true })
-
-      const { count: completedWorkouts } = await supabase
-        .from('workouts')
-        .select('*', { count: 'exact', head: true })
-        .eq('completed', true)
-
-      const { count: totalMessages } = await supabase
-        .from('ai_chats')
-        .select('*', { count: 'exact', head: true })
+      const [statsRes, workoutsRes] = await Promise.all([
+        getDashboardStats(),
+        getWorkouts(),
+      ])
 
       setStats({
-        totalWorkouts: totalWorkouts || 0,
-        completedWorkouts: completedWorkouts || 0,
-        totalMessages: totalMessages || 0
+        totalWorkouts: statsRes.data.totalWorkouts,
+        totalMeals: statsRes.data.totalMeals,
+        totalUsers: statsRes.data.totalUsers,
       })
-
-      const sevenDaysAgo = new Date()
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-      const { data: workouts } = await supabase
-        .from('workouts')
-        .select('created_at')
-        .gte('created_at', sevenDaysAgo.toISOString())
 
       const workoutsMap = new Map<string, number>()
       for (let i = 0; i < 7; i++) {
         const date = new Date()
         date.setDate(date.getDate() - i)
-        const dateStr = date.toISOString().split('T')[0]
-        workoutsMap.set(dateStr, 0)
+        workoutsMap.set(date.toISOString().split('T')[0], 0)
       }
 
-      workouts?.forEach(workout => {
-        const date = new Date(workout.created_at).toISOString().split('T')[0]
-        workoutsMap.set(date, (workoutsMap.get(date) || 0) + 1)
+      workoutsRes.data.forEach((w: DashboardWorkoutLog) => {
+        const date = new Date(w.created_at).toISOString().split('T')[0]
+        if (workoutsMap.has(date)) {
+          workoutsMap.set(date, (workoutsMap.get(date) ?? 0) + 1)
+        }
       })
 
-      const workoutsArray = Array.from(workoutsMap.entries())
-        .map(([date, count]) => ({ date, count }))
-        .sort((a, b) => a.date.localeCompare(b.date))
+      setWorkoutsData(
+        Array.from(workoutsMap.entries())
+          .map(([date, count]) => ({ date, count }))
+          .sort((a, b) => a.date.localeCompare(b.date))
+      )
 
-      setWorkoutsData(workoutsArray)
-
-      const { data: workoutTitles } = await supabase
-        .from('workouts')
-        .select('title')
-
-      const titleCounts = workoutTitles?.reduce((acc: Record<string, number>, workout: { title: string }) => {
-        acc[workout.title] = (acc[workout.title] || 0) + 1
-        return acc
-      }, {} as Record<string, number>) || {}
-
-      const popular = Object.entries(titleCounts)
-        .map(([title, count]) => ({ title, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5)
-
-      setPopularWorkouts(popular)
+      const titleCounts: Record<string, number> = {}
+      workoutsRes.data.forEach((w: DashboardWorkoutLog) => {
+        titleCounts[w.title] = (titleCounts[w.title] ?? 0) + 1
+      })
+      setPopularWorkouts(
+        Object.entries(titleCounts)
+          .map(([title, count]) => ({ title, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5)
+      )
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch data')
     } finally {

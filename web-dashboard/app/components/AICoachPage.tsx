@@ -5,19 +5,8 @@ import PageHeader from './PageHeader'
 import LoadingSpinner from './LoadingSpinner'
 import ErrorMessage from './ErrorMessage'
 
-interface AIChat {
-  id: string
-  user_id: string
-  message: string
-  role: string
-  created_at: string
-  users?: {
-    name: string
-  }
-}
-
 export default function AICoachPage() {
-  const { chats, loading, error, roleFilter, setRoleFilter } = UseAICoachData()
+  const { entries, loading, error, typeFilter, setTypeFilter } = UseAICoachData()
 
   if (loading) {
     return <LoadingSpinner className="h-64" />
@@ -29,18 +18,18 @@ export default function AICoachPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title="AI Coach" subtitle="AI chat conversations" />
+      <PageHeader title="Activity Feed" subtitle="Recent meal and workout logs from all users" />
 
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-400 mb-2">Filter by Role</label>
+        <label className="block text-sm font-medium text-gray-400 mb-2">Filter by Type</label>
         <select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
           className="bg-[#1a1a1a] border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#22c55e]"
         >
-          <option value="all">All Messages</option>
-          <option value="user">User Messages</option>
-          <option value="assistant">AI Responses</option>
+          <option value="all">All Activity</option>
+          <option value="meal">Meals</option>
+          <option value="workout">Workouts</option>
         </select>
       </div>
 
@@ -50,27 +39,27 @@ export default function AICoachPage() {
             <thead className="bg-[#2a2a2a]">
               <tr>
                 <th className="text-left py-3 px-4">User</th>
-                <th className="text-left py-3 px-4">Role</th>
-                <th className="text-left py-3 px-4">Message</th>
+                <th className="text-left py-3 px-4">Type</th>
+                <th className="text-left py-3 px-4">Description</th>
                 <th className="text-left py-3 px-4">Time</th>
               </tr>
             </thead>
             <tbody>
-              {chats.map((chat: AIChat) => (
-                <tr key={chat.id} className="border-b border-gray-800 hover:bg-[#2a2a2a]">
-                  <td className="py-3 px-4">{chat.users?.name || 'Unknown'}</td>
+              {entries.map((entry) => (
+                <tr key={entry.id} className="border-b border-gray-800 hover:bg-[#2a2a2a]">
+                  <td className="py-3 px-4">{entry.user_name}</td>
                   <td className="py-3 px-4">
                     <span className={`px-2 py-1 rounded-full text-xs ${
-                      chat.role === 'assistant'
+                      entry.type === 'workout'
                         ? 'bg-[#22c55e] text-black'
                         : 'bg-[#3b82f6] text-white'
                     }`}>
-                      {chat.role}
+                      {entry.type}
                     </span>
                   </td>
-                  <td className="py-3 px-4 max-w-md truncate">{chat.message}</td>
+                  <td className="py-3 px-4 max-w-md truncate">{entry.description}</td>
                   <td className="py-3 px-4">
-                    {new Date(chat.created_at).toLocaleString('th-TH')}
+                    {new Date(entry.logged_at).toLocaleString('th-TH')}
                   </td>
                 </tr>
               ))}
@@ -80,7 +69,7 @@ export default function AICoachPage() {
       </div>
 
       <div className="text-gray-400 text-sm">
-        Showing {chats.length} messages
+        Showing {entries.length} entries
       </div>
     </div>
   )

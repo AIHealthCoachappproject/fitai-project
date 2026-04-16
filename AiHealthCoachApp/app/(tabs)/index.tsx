@@ -14,21 +14,13 @@ import {
   Ionicons,
 } from "@expo/vector-icons";
 import React, { useMemo, useState } from "react";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { COLORS } from "@/constants/theme";
 import { useProfile } from "@/context/ProfileContext";
+import { useAuthContext } from "@/context/AuthContext";
+import { useMeals } from "@/hooks/useMeals";
+import { useWorkouts } from "@/hooks/useWorkouts";
 import EditHealthModal from "@/components/dashboard/EditHealthModal";
-
-const defaultData = {
-  bmi: "21.0",
-  bmiStatus: "Normal",
-  caloriesIn: 1450,
-  calorieGoal: 2000,
-  workoutProgress: "3/5",
-  workoutPercentage: "70%",
-  streak: 10,
-  streakBest: 15,
-};
 
 const getBmiStatus = (bmiValue: number) => {
   if (bmiValue >= 30) return "Obese";
@@ -37,29 +29,48 @@ const getBmiStatus = (bmiValue: number) => {
   return "Normal";
 };
 
+const getTodayStr = () => new Date().toISOString().split('T')[0];
+
 const TodayHealthStatus = () => {
   const router = useRouter();
-  const { bmi: paramBmi } = useLocalSearchParams();
   const { profile, updateProfileField, calculateBMI } = useProfile();
+  const { user, profile: authProfile } = useAuthContext();
+  const { meals } = useMeals(user?.id);
+  const { workouts } = useWorkouts(user?.id);
   const [showEditHealthModal, setShowEditHealthModal] = useState(false);
   const brandGreen = COLORS.primary;
 
-  // Use BMI from profile context, fallback to params, then default
+  // Real calories from today's meals
+  const todayStr = getTodayStr();
+  const todayCalories = useMemo(() => {
+    return meals
+      .filter((m) => m.logged_at?.startsWith(todayStr))
+      .reduce((sum, m) => sum + (m.calories ?? 0), 0);
+  }, [meals, todayStr]);
+
+  // Real workout count today
+  const todayWorkouts = useMemo(() => {
+    return workouts.filter((w) => w.created_at?.startsWith(todayStr));
+  }, [workouts, todayStr]);
+
+  // Compute BMI from profile (users.weight + user_profiles.height_cm)
   const bmiValue = useMemo(() => {
-    if (profile.bmi && profile.bmi !== "0") {
-      return parseFloat(profile.bmi);
+    const w = authProfile?.weight ?? 0;
+    const hCm = authProfile?.height_cm ?? 0;
+    if (w > 0 && hCm > 0) {
+      const hM = hCm / 100;
+      return w / (hM * hM);
     }
-    if (paramBmi) {
-      const parsed = parseFloat(String(paramBmi));
-      return Number.isFinite(parsed) ? parsed : parseFloat(defaultData.bmi);
-    }
-    return parseFloat(defaultData.bmi);
-  }, [profile.bmi, paramBmi]);
+    if (profile.bmi && profile.bmi !== "0") return parseFloat(profile.bmi);
+    return 0;
+  }, [authProfile?.weight, authProfile?.height_cm, profile.bmi]);
 
   const userData = {
-    ...defaultData,
-    bmi: bmiValue.toFixed(1),
-    bmiStatus: getBmiStatus(bmiValue),
+    bmi: bmiValue > 0 ? bmiValue.toFixed(1) : "—",
+    bmiStatus: bmiValue > 0 ? getBmiStatus(bmiValue) : "Not set",
+    caloriesIn: todayCalories,
+    calorieGoal: 2000,
+    workoutsDone: todayWorkouts.length,
   };
 
   const handleSaveHealth = (height: string, weight: string, activityLevel: string) => {
@@ -151,19 +162,19 @@ const TodayHealthStatus = () => {
           {/* ─── Workout & Streak ─── */}
           <View className="flex-row gap-3">
             <MetricCard
-              label="Workout Progress"
-              value={userData.workoutProgress}
-              status={userData.workoutPercentage}
+              label="Workouts Today"
+              value={userData.workoutsDone}
+              status={`${userData.workoutsDone} completed`}
               statusColor="text-purple-400"
               icon={<FontAwesome5 name="heart" size={22} color="#A855F7" />}
             />
             <MetricCard
-              label="Day Streak"
-              value={userData.streak}
-              status={`Personal Best: ${userData.streakBest}`}
+              label="Meals Logged"
+              value={meals.length}
+              status="Total logged"
               statusColor="text-orange-400"
               icon={
-                <MaterialCommunityIcons name="fire" size={26} color="#FB923C" />
+                <MaterialCommunityIcons name="food" size={26} color="#FB923C" />
               }
             />
           </View>

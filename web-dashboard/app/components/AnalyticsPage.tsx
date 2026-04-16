@@ -31,15 +31,15 @@ export default function AnalyticsPage() {
           color="#22c55e"
         />
         <StatCard
-          title="Completed Workouts"
-          value={stats.completedWorkouts.toLocaleString()}
-          sub="Finished workouts"
+          title="Total Meals"
+          value={stats.totalMeals.toLocaleString()}
+          sub="Logged meals"
           color="#3b82f6"
         />
         <StatCard
-          title="AI Chat Messages"
-          value={stats.totalMessages.toLocaleString()}
-          sub="Total messages"
+          title="Total Users"
+          value={stats.totalUsers.toLocaleString()}
+          sub="Registered users"
           color="#f59e0b"
         />
       </div>

@@ -1,4 +1,4 @@
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, Alert } from "react-native";
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -8,12 +8,14 @@ import CustomButton from "@/components/ui/CustomButton";
 import SelectButton from "@/components/ui/SelectButton";
 import { GENDER_OPTIONS, ACTIVITY_LEVELS } from "@/components/constants/healthData";
 import { useProfile } from "@/context/ProfileContext";
+import { useAuthContext } from "@/context/AuthContext";
 
 const SetUpYourHealthProfile = () => {
   const router = useRouter();
   const { setProfile } = useProfile();
+  const { upsertProfile } = useAuthContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
 
   const [form, setForm] = useState({
     name: "",
@@ -45,34 +47,50 @@ const SetUpYourHealthProfile = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleContinue = () => {
-  if (!validate()) return;
-  setIsSubmitting(true);
+  const handleContinue = async () => {
+    if (!validate()) return;
+    setIsSubmitting(true);
 
-  setTimeout(() => {
-    // Save to Profile Context
-    setProfile({
-      name: form.name,
-      age: form.age,
-      gender: form.gender,
-      activityLevel: form.activityLevel,
-      height: form.height,
-      weight: form.weight,
-      bmi: currentBMI,
-      profileImage: null,
-    });
-
-    setIsSubmitting(false);
-    router.push({
-      pathname: "/(onboarding)/ChooseYourBodyGoal",
-      params: {
-        bmi: currentBMI,
-        weight: form.weight,
+    try {
+      // Save to Profile Context (local state)
+      setProfile({
+        name: form.name,
+        age: form.age,
+        gender: form.gender,
+        activityLevel: form.activityLevel,
         height: form.height,
+        weight: form.weight,
+        bmi: currentBMI,
+        profileImage: null,
+      });
+
+      // Save to Supabase
+      const result = await upsertProfile({
+        name: form.name,
+        weight: parseFloat(form.weight),
+        // user_profiles fields
+        age: parseInt(form.age, 10),
+        gender: form.gender,
+        activity_level: form.activityLevel,
+        height_cm: parseFloat(form.height),
+      });
+
+      if (!result.success) {
+        Alert.alert("Error", result.error ?? "Failed to save profile");
+        setIsSubmitting(false);
+        return;
       }
-    });
-  }, 1500);
-};
+
+      router.push({
+        pathname: "/(onboarding)/ChooseYourBodyGoal",
+        params: { bmi: currentBMI, weight: form.weight, height: form.height },
+      });
+    } catch (err) {
+      Alert.alert("Error", "Failed to save profile. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-background">

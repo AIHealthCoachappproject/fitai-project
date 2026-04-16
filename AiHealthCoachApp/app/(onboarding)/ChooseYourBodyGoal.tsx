@@ -1,9 +1,10 @@
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, Alert } from "react-native";
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import CustomButton from "@/components/ui/CustomButton";
 import SelectButton from "@/components/ui/SelectButton";
+import { useAuthContext } from "@/context/AuthContext";
 
 const BODY_GOALS = [
   { id: "weight_loss", label: "Weight Loss", icon: "🏃", desc: "Burn fat and get lean" },
@@ -14,17 +15,29 @@ const BODY_GOALS = [
 
 const ChooseYourBodyGoal = () => {
   const router = useRouter();
+  const { upsertProfile } = useAuthContext();
   const [selectedGoal, setSelectedGoal] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!selectedGoal) {
-      setError("กรุณาเลือกเป้าหมายของคุณ");
+      setError("Please select your goal");
       return;
     }
-    // // บันทึกข้อมูล (ถ้าต้องการ) ก่อนไปหน้า loading
-    // console.log("Selected Goal:", selectedGoal);
-    router.push("/loading"); // ไปหน้า loading ที่จะนำไปสู่ Dashboard
+    setIsSubmitting(true);
+    try {
+      const result = await upsertProfile({ goal: selectedGoal });
+      if (!result.success) {
+        Alert.alert("Error", result.error ?? "Failed to save goal");
+        return;
+      }
+      router.push("/loading");
+    } catch (err) {
+      Alert.alert("Error", "Something went wrong");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

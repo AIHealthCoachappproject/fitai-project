@@ -1,22 +1,13 @@
 'use client'
 
 import { UseUsersData } from '../hooks/useUsersData'
+import type { DashboardProfile } from '@/lib/actions'
 import PageHeader from './PageHeader'
 import LoadingSpinner from './LoadingSpinner'
 import ErrorMessage from './ErrorMessage'
 
-interface User {
-  id: string
-  email: string
-  name: string
-  goal: string
-  weight: number
-  plan: string
-  created_at: string
-}
-
 export default function UsersPage() {
-  const { users, loading, error, planFilter, setPlanFilter, searchTerm, setSearchTerm } = UseUsersData()
+  const { users, loading, error, goalFilter, setGoalFilter, searchTerm, setSearchTerm } = UseUsersData()
 
   if (loading) {
     return <LoadingSpinner className="h-64" />
@@ -32,15 +23,17 @@ export default function UsersPage() {
 
       <div className="flex gap-4 mb-6">
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-2">Filter by Plan</label>
+          <label className="block text-sm font-medium text-gray-400 mb-2">Filter by Goal</label>
           <select
-            value={planFilter}
-            onChange={(e) => setPlanFilter(e.target.value)}
+            value={goalFilter}
+            onChange={(e) => setGoalFilter(e.target.value)}
             className="bg-[#1a1a1a] border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#22c55e]"
           >
-            <option value="all">All Plans</option>
-            <option value="free">Free</option>
-            <option value="pro">Pro</option>
+            <option value="all">All Goals</option>
+            <option value="weight_loss">Weight Loss</option>
+            <option value="muscle_gain">Muscle Gain</option>
+            <option value="toned_body">Toned Body</option>
+            <option value="healthy">Healthy Lifestyle</option>
           </select>
         </div>
 
@@ -64,29 +57,21 @@ export default function UsersPage() {
                 <th className="text-left py-3 px-4">Name</th>
                 <th className="text-left py-3 px-4">Email</th>
                 <th className="text-left py-3 px-4">Goal</th>
-                <th className="text-left py-3 px-4">Weight (kg)</th>
+                <th className="text-left py-3 px-4">Weight</th>
                 <th className="text-left py-3 px-4">Plan</th>
                 <th className="text-left py-3 px-4">Joined</th>
               </tr>
             </thead>
             <tbody>
-              {users.map((user: User) => (
+              {users.map((user: DashboardProfile) => (
                 <tr key={user.id} className="border-b border-gray-800 hover:bg-[#2a2a2a]">
-                  <td className="py-3 px-4">{user.name}</td>
-                  <td className="py-3 px-4">{user.email}</td>
-                  <td className="py-3 px-4 capitalize">{user.goal.replace('_', ' ')}</td>
-                  <td className="py-3 px-4">{user.weight} kg</td>
+                  <td className="py-3 px-4">{user.name ?? '—'}</td>
+                  <td className="py-3 px-4">{user.email ?? '—'}</td>
+                  <td className="py-3 px-4 capitalize">{(user.goal ?? '').replace('_', ' ')}</td>
+                  <td className="py-3 px-4">{user.weight ? `${user.weight} kg` : '—'}</td>
+                  <td className="py-3 px-4 uppercase">{user.plan ?? 'free'}</td>
                   <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      user.plan === 'pro'
-                        ? 'bg-[#22c55e] text-black'
-                        : 'bg-gray-600 text-white'
-                    }`}>
-                      {user.plan.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    {new Date(user.created_at).toLocaleDateString('th-TH')}
+                    {new Date(user.created_at).toLocaleDateString()}
                   </td>
                 </tr>
               ))}
