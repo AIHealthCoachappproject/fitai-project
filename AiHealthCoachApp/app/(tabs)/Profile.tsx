@@ -25,19 +25,11 @@ const Profile = () => {
   const mutedText = COLORS.muted;
   const bgColor = '#0A0A0A';
 
-  const handleSaveHealth = (height: string, weight: string, activityLevel: string) => {
-    const weightNum = parseFloat(weight);
-    const heightNum = parseFloat(height) / 100;
-    const calculatedBmi = (weightNum > 0 && heightNum > 0)
-      ? (weightNum / (heightNum * heightNum)).toFixed(1)
-      : profile.bmi;
-
+  const handleSaveHealth = (height: string, activityLevel: string) => {
     setProfile({
       ...profile,
       height,
-      weight,
       activityLevel,
-      bmi: calculatedBmi,
     });
   };
 
@@ -165,17 +157,22 @@ const Profile = () => {
               </View>
             </View>
 
-            {/* Weight Card */}
-            <View className="flex-1 p-5 rounded-2xl border" style={{ backgroundColor: COLORS.secondary, borderColor: 'rgba(244, 114, 182, 0.2)' }}>
+            {/* Weight Card - View Only */}
+            <View className="flex-1 p-5 rounded-2xl border" style={{ backgroundColor: COLORS.secondary, borderColor: 'rgba(96, 165, 250, 0.2)' }}>
               <Text style={{ fontSize: 13, fontWeight: '800', color: primaryColor, marginBottom: 8, letterSpacing: 0.5 }}>
                 WEIGHT
               </Text>
               <View className="flex-row items-center justify-between">
-                <Text style={{ fontSize: 20, fontWeight: '800', color: whiteText }}>
-                  {profile.weight || 'Not Set'}
-                  <Text style={{ fontSize: 12, color: mutedText, fontWeight: '600' }}> kg</Text>
-                </Text>
-                <Ionicons name="scale" size={28} color="#F472B6" />
+                <View className="flex-1">
+                  <Text style={{ fontSize: 20, fontWeight: '800', color: whiteText }}>
+                    {profile.weight || 'Not Set'}
+                    <Text style={{ fontSize: 12, color: mutedText, fontWeight: '600' }}> kg</Text>
+                  </Text>
+                  <Text style={{ fontSize: 10, color: COLORS.muted, marginTop: 6 }}>
+                    Updated from workouts
+                  </Text>
+                </View>
+                <Ionicons name="scale" size={28} color="#60A5FA" />
               </View>
             </View>
           </View>
@@ -203,9 +200,20 @@ const Profile = () => {
           >
             <Ionicons name="create-outline" size={18} color={COLORS.black} />
             <Text style={{ color: COLORS.black, fontWeight: '700', fontSize: 14, marginLeft: 8 }}>
-              Edit Health Info
+              Edit Height & Activity
             </Text>
           </TouchableOpacity>
+
+          {/* Note about Weight */}
+          <View
+            className="mt-4 flex-row items-start px-4 py-3 rounded-2xl"
+            style={{ backgroundColor: 'rgba(120, 113, 255, 0.1)', borderColor: 'rgba(120, 113, 255, 0.2)', borderWidth: 1 }}
+          >
+            <Ionicons name="information-circle" size={16} color="rgba(120, 113, 255, 0.7)" style={{ marginTop: 2 }} />
+            <Text style={{ fontSize: 12, color: 'rgba(120, 113, 255, 0.8)', marginLeft: 8, flex: 1, lineHeight: 16 }}>
+              Weight is updated automatically when you log workouts
+            </Text>
+          </View>
         </View>
       </ScrollView>
 
@@ -215,7 +223,6 @@ const Profile = () => {
         onClose={() => setShowEditHealthModal(false)}
         onSave={handleSaveHealth}
         initialHeight={profile.height}
-        initialWeight={profile.weight}
         initialActivityLevel={profile.activityLevel}
       />
 

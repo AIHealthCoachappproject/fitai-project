@@ -18,9 +18,8 @@ import { ACTIVITY_LEVELS } from '@/components/constants/healthData';
 interface EditHealthModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (height: string, weight: string, activityLevel: string) => void;
+  onSave: (height: string, activityLevel: string) => void;
   initialHeight: string;
-  initialWeight: string;
   initialActivityLevel: string;
 }
 
@@ -29,11 +28,9 @@ const EditHealthModal: React.FC<EditHealthModalProps> = ({
   onClose,
   onSave,
   initialHeight,
-  initialWeight,
   initialActivityLevel,
 }) => {
   const [height, setHeight] = useState(initialHeight);
-  const [weight, setWeight] = useState(initialWeight);
   const [activityLevel, setActivityLevel] = useState(initialActivityLevel);
   const [errors, setErrors] = useState<any>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,8 +39,6 @@ const EditHealthModal: React.FC<EditHealthModalProps> = ({
     let newErrors: any = {};
     if (!height.trim()) newErrors.height = 'Please fill in height';
     else if (!/^\d+$/.test(height.trim())) newErrors.height = 'Please enter numbers only';
-    if (!weight.trim()) newErrors.weight = 'Please fill in weight';
-    else if (!/^\d+$/.test(weight.trim())) newErrors.weight = 'Please enter numbers only';
     if (!activityLevel) newErrors.activityLevel = 'Please select activity level';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -52,14 +47,13 @@ const EditHealthModal: React.FC<EditHealthModalProps> = ({
   const handleSave = () => {
     if (!validate()) return;
     setIsSubmitting(true);
-    onSave(height, weight, activityLevel);
+    onSave(height, activityLevel);
     setIsSubmitting(false);
     onClose();
   };
 
   const handleClose = () => {
     setHeight(initialHeight);
-    setWeight(initialWeight);
     setActivityLevel(initialActivityLevel);
     setErrors({});
     onClose();
@@ -80,45 +74,24 @@ const EditHealthModal: React.FC<EditHealthModalProps> = ({
         </View>
 
         <View className="flex-1 px-5 pt-6 pb-6">
-          {/* Height & Weight Row */}
-          <View className="flex-row gap-3 mb-6">
-            <View className="flex-1">
-              <FormField
-                title="Height (cm)"
-                value={height}
-                placeholder="cm"
-                keyboardType="numeric"
-                handleChangeText={(e) => {
-                  const numericValue = e.replace(/[^0-9]/g, '');
-                  setHeight(numericValue);
-                  if (errors.height) setErrors({ ...errors, height: undefined });
-                }}
-              />
-              {errors.height && (
-                <Text className="text-red-500 text-xs mt-1 ml-1 font-medium">
-                  {errors.height}
-                </Text>
-              )}
-            </View>
-
-            <View className="flex-1">
-              <FormField
-                title="Weight (kg)"
-                value={weight}
-                placeholder="kg"
-                keyboardType="numeric"
-                handleChangeText={(e) => {
-                  const numericValue = e.replace(/[^0-9]/g, '');
-                  setWeight(numericValue);
-                  if (errors.weight) setErrors({ ...errors, weight: undefined });
-                }}
-              />
-              {errors.weight && (
-                <Text className="text-red-500 text-xs mt-1 ml-1 font-medium">
-                  {errors.weight}
-                </Text>
-              )}
-            </View>
+          {/* Height Section */}
+          <View className="mb-6">
+            <FormField
+              title="Height (cm)"
+              value={height}
+              placeholder="cm"
+              keyboardType="numeric"
+              handleChangeText={(e) => {
+                const numericValue = e.replace(/[^0-9]/g, '');
+                setHeight(numericValue);
+                if (errors.height) setErrors({ ...errors, height: undefined });
+              }}
+            />
+            {errors.height && (
+              <Text className="text-red-500 text-xs mt-1 ml-1 font-medium">
+                {errors.height}
+              </Text>
+            )}
           </View>
 
           {/* Activity Level */}

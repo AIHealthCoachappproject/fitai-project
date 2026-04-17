@@ -62,21 +62,11 @@ const TodayHealthStatus = () => {
     bmiStatus: getBmiStatus(bmiValue),
   };
 
-  const handleSaveHealth = (height: string, weight: string, activityLevel: string) => {
-    // คำนวณ BMI ก่อน
-    const weightNum = parseFloat(weight);
-    const heightNum = parseFloat(height) / 100;
-    const calculatedBmi = (weightNum > 0 && heightNum > 0) 
-      ? (weightNum / (heightNum * heightNum)).toFixed(1)
-      : "0";
-    
-    // อัปเดท profile ทั้งหมดพร้อมกันในครั้งเดียว
+  const handleSaveHealth = (height: string, activityLevel: string) => {
     setProfile({
       ...profile,
       height,
-      weight,
       activityLevel,
-      bmi: calculatedBmi,
     });
   };
 
@@ -219,7 +209,6 @@ const TodayHealthStatus = () => {
         onClose={() => setShowEditHealthModal(false)}
         onSave={handleSaveHealth}
         initialHeight={profile.height}
-        initialWeight={profile.weight}
         initialActivityLevel={profile.activityLevel}
       />
     </SafeAreaView>
