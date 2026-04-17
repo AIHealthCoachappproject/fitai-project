@@ -15,6 +15,20 @@ interface UseAuthReturn {
   upsertProfile: (data: Partial<Omit<Profile, 'id' | 'email' | 'created_at'>>) => Promise<{ success: boolean; error?: string }>;
 }
 
+// Columns that live on public.users (per CLAUDE.md ACTUAL schema)
+const USERS_COLS = ['name', 'goal', 'weight', 'plan', 'onboarding_completed'] as const;
+// Columns that live on public.user_profiles
+const PROFILES_COLS = [
+  'name', 'goal', 'plan', 'onboarding_completed',
+  'age', 'height_cm', 'gender', 'activity_level', 'daily_calorie', 'bmr',
+] as const;
+
+function pick<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const k of keys) if (k in obj) out[k] = obj[k];
+  return out;
+}
+
 export function useAuth(): UseAuthReturn {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -22,50 +36,44 @@ export function useAuth(): UseAuthReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch joined data from `users` + `user_profiles`
   const fetchProfile = useCallback(async (userId: string) => {
     try {
-      // 1. Get user row
-      const { data: userRow, error: userErr } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const email = authUser?.email ?? '';
 
-      if (userErr && userErr.code !== 'PGRST116') {
-        console.error('FETCH USER ERROR:', userErr.message);
-        return;
+      const [usersRes, profileRes] = await Promise.all([
+        supabase.from('users').select('*').eq('id', userId).maybeSingle(),
+        supabase.from('user_profiles').select('*').eq('id', userId).maybeSingle(),
+      ]);
+
+      if (usersRes.error && usersRes.error.code !== 'PGRST116') {
+        console.error('FETCH USERS ERROR:', usersRes.error.message);
+      }
+      if (profileRes.error && profileRes.error.code !== 'PGRST116') {
+        console.error('FETCH USER_PROFILES ERROR:', profileRes.error.message);
       }
 
-      // 2. Get user_profiles row (may not exist yet)
-      const { data: profileRow, error: profileErr } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      const u = usersRes.data ?? {};
+      const p = profileRes.data ?? {};
 
-      if (profileErr && profileErr.code !== 'PGRST116') {
-        console.error('FETCH USER_PROFILES ERROR:', profileErr.message);
-      }
-
-      if (userRow) {
-        setProfile({
-          id: userRow.id,
-          email: userRow.email ?? '',
-          name: userRow.name ?? '',
-          goal: userRow.goal ?? '',
-          weight: userRow.weight ?? 0,
-          plan: userRow.plan ?? 'free',
-          created_at: userRow.created_at ?? '',
-          age: profileRow?.age ?? 0,
-          height_cm: profileRow?.height_cm ?? 0,
-          gender: profileRow?.gender ?? '',
-          activity_level: profileRow?.activity_level ?? '',
-          target_weight_kg: profileRow?.target_weight_kg ?? 0,
-          daily_calorie: profileRow?.daily_calorie ?? 0,
-          bmr: profileRow?.bmr ?? 0,
-        });
-      }
+      setProfile({
+        id: userId,
+        email,
+        created_at: u.created_at ?? authUser?.created_at ?? '',
+        // From users table
+        name: u.name ?? p.name ?? '',
+        goal: u.goal ?? p.goal ?? '',
+        weight: u.weight ?? 0,
+        plan: u.plan ?? p.plan ?? 'free',
+        onboarding_completed: u.onboarding_completed ?? p.onboarding_completed ?? false,
+        // From user_profiles
+        age: p.age ?? 0,
+        height_cm: p.height_cm ?? 0,
+        gender: p.gender ?? '',
+        activity_level: p.activity_level ?? '',
+        daily_calorie: p.daily_calorie ?? 0,
+        bmr: p.bmr ?? 0,
+      });
     } catch (err) {
       console.error('Profile fetch exception:', err);
     }
@@ -77,15 +85,11 @@ export function useAuth(): UseAuthReturn {
     const init = async () => {
       try {
         const { data: { session: currentSession }, error: sessErr } = await supabase.auth.getSession();
-        if (sessErr) {
-          console.error('AUTH INIT ERROR:', sessErr.message);
-        }
+        if (sessErr) console.error('AUTH INIT ERROR:', sessErr.message);
         if (!mounted) return;
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
-        if (currentSession?.user) {
-          await fetchProfile(currentSession.user.id);
-        }
+        if (currentSession?.user) await fetchProfile(currentSession.user.id);
       } catch (err) {
         console.error('AUTH INIT EXCEPTION:', err);
       } finally {
@@ -100,11 +104,8 @@ export function useAuth(): UseAuthReturn {
         if (!mounted) return;
         setSession(newSession);
         setUser(newSession?.user ?? null);
-        if (newSession?.user) {
-          await fetchProfile(newSession.user.id);
-        } else {
-          setProfile(null);
-        }
+        if (newSession?.user) await fetchProfile(newSession.user.id);
+        else setProfile(null);
       }
     );
 
@@ -121,7 +122,6 @@ export function useAuth(): UseAuthReturn {
 
       if (signUpError) {
         console.error('SIGNUP ERROR:', signUpError.message);
-        // Rate limit → tell user to wait or use existing account
         if (signUpError.message.toLowerCase().includes('rate limit')) {
           const msg = 'Too many signup attempts. Please wait a minute and try again, or log in with an existing account.';
           setError(msg);
@@ -131,22 +131,21 @@ export function useAuth(): UseAuthReturn {
         return { success: false, error: signUpError.message };
       }
 
-      if (!data.user) {
-        return { success: false, error: 'Registration failed — no user returned' };
-      }
+      if (!data.user) return { success: false, error: 'Registration failed — no user returned' };
 
-      // Insert row into `users` table so the rest of the app works
-      const { error: insertErr } = await supabase
-        .from('users')
-        .upsert(
-          { id: data.user.id, email: data.user.email ?? email, name: '', goal: '', plan: 'free' },
+      // Seed rows in users + user_profiles so later upserts work
+      const [usersIns, profilesIns] = await Promise.all([
+        supabase.from('users').upsert(
+          { id: data.user.id, email: data.user.email ?? email, onboarding_completed: false },
           { onConflict: 'id' },
-        );
-
-      if (insertErr) {
-        console.error('USERS UPSERT ERROR:', insertErr.message);
-        // Non-fatal — auth account exists, users row may have been created by a trigger
-      }
+        ),
+        supabase.from('user_profiles').upsert(
+          { id: data.user.id, onboarding_completed: false },
+          { onConflict: 'id' },
+        ),
+      ]);
+      if (usersIns.error)    console.error('USERS INIT ERROR:', usersIns.error.message);
+      if (profilesIns.error) console.error('USER_PROFILES INIT ERROR:', profilesIns.error.message);
 
       return { success: true };
     } catch (err) {
@@ -161,13 +160,11 @@ export function useAuth(): UseAuthReturn {
     try {
       setError(null);
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-
       if (signInError) {
         console.error('LOGIN ERROR:', signInError.message);
         setError(signInError.message);
         return { success: false, error: signInError.message };
       }
-
       return { success: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed';
@@ -188,46 +185,28 @@ export function useAuth(): UseAuthReturn {
     }
   }, []);
 
-  /**
-   * Upserts data into both `users` and `user_profiles` tables.
-   * Fields belonging to `users`: name, goal, weight, plan
-   * Fields belonging to `user_profiles`: age, height_cm, gender, activity_level, target_weight_kg, daily_calorie, bmr
-   */
   const upsertProfile = useCallback(
     async (data: Partial<Omit<Profile, 'id' | 'email' | 'created_at'>>) => {
       if (!user) return { success: false, error: 'Not authenticated' };
 
       try {
-        // Split fields between the two tables
-        const usersData: Record<string, unknown> = { id: user.id };
-        const profileData: Record<string, unknown> = { id: user.id };
+        const usersPatch    = pick(data as Record<string, unknown>, USERS_COLS as unknown as string[]);
+        const profilesPatch = pick(data as Record<string, unknown>, PROFILES_COLS as unknown as string[]);
 
-        const usersFields = ['name', 'goal', 'weight', 'plan'] as const;
-        const profileFields = ['age', 'height_cm', 'gender', 'activity_level', 'target_weight_kg', 'daily_calorie', 'bmr'] as const;
-
-        for (const k of usersFields) {
-          if (k in data) usersData[k] = (data as Record<string, unknown>)[k];
-        }
-        for (const k of profileFields) {
-          if (k in data) profileData[k] = (data as Record<string, unknown>)[k];
-        }
-
-        // Upsert users if there's something to write
-        if (Object.keys(usersData).length > 1) {
+        if (Object.keys(usersPatch).length) {
           const { error: uErr } = await supabase
             .from('users')
-            .upsert(usersData, { onConflict: 'id' });
+            .upsert({ id: user.id, ...usersPatch }, { onConflict: 'id' });
           if (uErr) {
             console.error('USERS UPSERT ERROR:', uErr.message);
             return { success: false, error: uErr.message };
           }
         }
 
-        // Upsert user_profiles if there's something to write
-        if (Object.keys(profileData).length > 1) {
+        if (Object.keys(profilesPatch).length) {
           const { error: pErr } = await supabase
             .from('user_profiles')
-            .upsert(profileData, { onConflict: 'id' });
+            .upsert({ id: user.id, ...profilesPatch }, { onConflict: 'id' });
           if (pErr) {
             console.error('USER_PROFILES UPSERT ERROR:', pErr.message);
             return { success: false, error: pErr.message };
@@ -245,15 +224,5 @@ export function useAuth(): UseAuthReturn {
     [user, fetchProfile],
   );
 
-  return {
-    session,
-    user,
-    profile,
-    loading,
-    error,
-    signUp,
-    signIn,
-    signOut,
-    upsertProfile,
-  };
+  return { session, user, profile, loading, error, signUp, signIn, signOut, upsertProfile };
 }

@@ -7,11 +7,17 @@ export interface UserRow {
   weight: number;
   plan: string;
   created_at: string;
+  onboarding_completed: boolean;
 }
 
 /* ── Matches `user_profiles` table ── */
 export interface UserProfile {
-  id: string;          // FK → users.id
+  id: string;
+  name: string;
+  goal: string;
+  weight: number;
+  plan: string;
+  onboarding_completed: boolean;
   age: number;
   height_cm: number;
   gender: string;
@@ -30,6 +36,7 @@ export interface Profile {
   weight: number;
   plan: string;
   created_at: string;
+  onboarding_completed: boolean;
   // from user_profiles
   age: number;
   height_cm: number;

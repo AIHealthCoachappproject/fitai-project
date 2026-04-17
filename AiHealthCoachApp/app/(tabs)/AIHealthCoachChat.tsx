@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { chatWithGemini } from '@/constants/gemini';
 import {
   View, Text, ScrollView, TextInput,
   TouchableOpacity, KeyboardAvoidingView,
@@ -55,11 +56,10 @@ const AIHealthCoachChat = () => {
     return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
   };
 
-  const sendMessage = (text: string) => {
+  const sendMessage = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
 
-    // เพิ่ม user message
     const userMsg: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -69,21 +69,29 @@ const AIHealthCoachChat = () => {
     setMessages((prev) => [...prev, userMsg]);
     setInputText('');
     setIsTyping(true);
+    scrollRef.current?.scrollToEnd({ animated: true });
 
-    // AI ตอบกลับ (mock)
-    setTimeout(() => {
-      const aiMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'ai',
-        content: `Got it! I'll help you with "${trimmed}". Let me prepare a plan for you. 💪`,
-        time: getTime(),
-      };
-      setMessages((prev) => [...prev, aiMsg]);
+    try {
+      const history = messages
+        .filter(m => m.type !== 'goal_options' && m.content)
+        .map(m => ({
+          role: m.role === 'ai' ? 'assistant' as const : 'user' as const,
+          content: m.content,
+        }));
+      const response = await chatWithGemini(trimmed, history);
+      setMessages((prev) => [
+        ...prev,
+        { id: (Date.now() + 1).toString(), role: 'ai', content: response, time: getTime() },
+      ]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { id: (Date.now() + 1).toString(), role: 'ai', content: 'ขออภัย เกิดข้อผิดพลาด กรุณาลองใหม่', time: getTime() },
+      ]);
+    } finally {
       setIsTyping(false);
       scrollRef.current?.scrollToEnd({ animated: true });
-    }, 1200);
-
-    scrollRef.current?.scrollToEnd({ animated: true });
+    }
   };
 
   return (

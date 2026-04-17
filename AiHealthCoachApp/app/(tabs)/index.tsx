@@ -5,6 +5,7 @@ import {
   ImageBackground,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MetricCard from "@/components/dashboard/MetricCard";
@@ -21,6 +22,7 @@ import { useAuthContext } from "@/context/AuthContext";
 import { useMeals } from "@/hooks/useMeals";
 import { useWorkouts } from "@/hooks/useWorkouts";
 import EditHealthModal from "@/components/dashboard/EditHealthModal";
+import FoodScannerModal from "@/components/food/FoodScannerModal";
 
 const getBmiStatus = (bmiValue: number) => {
   if (bmiValue >= 30) return "Obese";
@@ -35,9 +37,10 @@ const TodayHealthStatus = () => {
   const router = useRouter();
   const { profile, updateProfileField, calculateBMI } = useProfile();
   const { user, profile: authProfile } = useAuthContext();
-  const { meals } = useMeals(user?.id);
-  const { workouts } = useWorkouts(user?.id);
+  const { meals, loading: mealsLoading, error: mealsError, addMeal, refresh: refreshMeals } = useMeals(user?.id);
+  const { workouts, loading: workoutsLoading, error: workoutsError, refresh: refreshWorkouts } = useWorkouts(user?.id);
   const [showEditHealthModal, setShowEditHealthModal] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const brandGreen = COLORS.primary;
 
   // Real calories from today's meals
@@ -134,6 +137,21 @@ const TodayHealthStatus = () => {
         </View>
 
         <View className="px-4 gap-3">
+          {/* ─── Loading / Error ─── */}
+          {(mealsLoading || workoutsLoading) && (
+            <View className="items-center py-2">
+              <ActivityIndicator size="small" color={COLORS.primary} />
+            </View>
+          )}
+          {(mealsError || workoutsError) && (
+            <TouchableOpacity
+              onPress={() => { refreshMeals(); refreshWorkouts(); }}
+              className="bg-red-900/40 rounded-2xl px-4 py-3 flex-row items-center justify-between"
+            >
+              <Text className="text-red-400 text-sm">โหลดข้อมูลไม่สำเร็จ — แตะเพื่อลองใหม่</Text>
+              <Ionicons name="refresh" size={16} color="#f87171" />
+            </TouchableOpacity>
+          )}
           {/* ─── BMI & Calories ─── */}
           <View className="flex-row gap-3">
             <View className="flex-1">
@@ -182,6 +200,7 @@ const TodayHealthStatus = () => {
           {/* ─── Scan Food ─── */}
           <TouchableOpacity
             activeOpacity={0.8}
+            onPress={() => setShowScanner(true)}
             className="bg-secondary rounded-[28px] border border-white/8 overflow-hidden"
           >
             <View className="flex-row items-center px-5 py-4 gap-4">
@@ -231,6 +250,15 @@ const TodayHealthStatus = () => {
           </View>
         </View>
       </ScrollView>
+
+      <FoodScannerModal
+        visible={showScanner}
+        onClose={() => setShowScanner(false)}
+        onConfirm={async (food) => {
+          await addMeal({ ...food, user_id: user!.id });
+          setShowScanner(false);
+        }}
+      />
 
       {/* Edit Health Modal - for editing height, weight, activity level */}
       <EditHealthModal

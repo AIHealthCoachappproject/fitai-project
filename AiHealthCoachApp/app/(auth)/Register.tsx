@@ -44,11 +44,10 @@ const Register = () => {
     setIsSubmitting(true);
     try {
       const result = await signUp(form.email.trim(), form.password);
-      if (result.success) {
-        router.push("/(onboarding)/SetUpYourHealthProfile");
-      } else {
+      if (!result.success) {
         Alert.alert("Registration Failed", result.error ?? "Could not create account");
       }
+      // Routing handled by _layout.tsx: detects session + onboarding_completed=false → onboarding
     } catch (err) {
       Alert.alert("Error", "Something went wrong. Please try again.");
     } finally {

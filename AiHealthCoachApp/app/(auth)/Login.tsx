@@ -44,11 +44,10 @@ const Login = () => {
     setIsSubmitting(true);
     try {
       const result = await signIn(form.email.trim(), form.password);
-      if (result.success) {
-        router.replace("/(tabs)");
-      } else {
+      if (!result.success) {
         Alert.alert("Login Failed", result.error ?? "Invalid credentials");
       }
+      // Routing handled by _layout.tsx: checks onboarding_completed and routes accordingly
     } catch (err) {
       Alert.alert("Error", "Something went wrong. Please try again.");
     } finally {

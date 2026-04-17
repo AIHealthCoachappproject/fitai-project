@@ -27,7 +27,7 @@ const ChooseYourBodyGoal = () => {
     }
     setIsSubmitting(true);
     try {
-      const result = await upsertProfile({ goal: selectedGoal });
+      const result = await upsertProfile({ goal: selectedGoal, onboarding_completed: true });
       if (!result.success) {
         Alert.alert("Error", result.error ?? "Failed to save goal");
         return;
