@@ -13,19 +13,17 @@ import { COLORS } from '@/constants/theme';
 import { useProfile } from '@/context/ProfileContext';
 import EditHealthModal from '@/components/dashboard/EditHealthModal';
 import PhotoUploadModal from '@/components/dashboard/PhotoUploadModal';
-import MetricCard from '@/components/dashboard/MetricCard';
 
 const Profile = () => {
   const router = useRouter();
-  const { profile, setProfile, updateProfileField, calculateBMI } = useProfile();
+  const { profile, setProfile, updateProfileField } = useProfile();
   const [showEditHealthModal, setShowEditHealthModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
 
-  // Color Scheme
-  const primaryColor = COLORS.primary;     // #39FF14 - green
-  const whiteText = '#F5F5F5';             // main content
-  const mutedText = COLORS.muted;          // #A3A3A3 - description
-  const bgColor = '#0A0A0A';               // darker background
+  const primaryColor = COLORS.primary;
+  const whiteText = '#F5F5F5';
+  const mutedText = COLORS.muted;
+  const bgColor = '#0A0A0A';
 
   const handleSaveHealth = (height: string, weight: string, activityLevel: string) => {
     const weightNum = parseFloat(weight);

@@ -8,7 +8,7 @@ import { useWorkoutPlan } from '@/context/WorkoutPlanContext';
 
 const DailyPlanDetail = () => {
   const router = useRouter();
-  const { plan, state, currentWeek, currentDay, completedWeeks, totalWeeks, getDayDate } = useWorkoutPlan();
+  const { plan, state, currentWeek, currentDay, completedWeeks, totalWeeks, getDayDate, activeDaysOfWeek } = useWorkoutPlan();
 
   if (!plan) {
     return (
@@ -103,10 +103,13 @@ const DailyPlanDetail = () => {
                 const isDone = state.completedDays[wIndex]?.[dIndex];
                 const isToday = isCurrentWeek && dIndex === currentDay;
                 const isLast = dIndex === week.days.length - 1;
+                const isActiveDay = activeDaysOfWeek.includes(dIndex);
 
                 return (
                   <View key={dIndex}>
-                    <View
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => router.push(`/(tabs)/WorkoutDayDetail?weekIndex=${wIndex}&dayIndex=${dIndex}`)}
                       className="flex-row items-center rounded-2xl px-4 py-3"
                       style={{
                         backgroundColor: isToday
@@ -147,18 +150,25 @@ const DailyPlanDetail = () => {
                         {getDayDate(wIndex, dIndex)}
                       </Text>
 
-                      {/* Focus */}
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          fontWeight: isDone || isToday ? '700' : '500',
-                          color: day.isRest ? COLORS.muted : isDone ? COLORS.primary : COLORS.white,
-                          flex: 1,
-                        }}
-                        numberOfLines={1}
-                      >
-                        {day.focus}
-                      </Text>
+                      {/* Focus with * indicator for active days that should workout */}
+                      <View className="flex-row items-center flex-1">
+                        {isActiveDay && !day.isRest && (
+                          <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.primary, marginRight: 4 }}>
+                            *
+                          </Text>
+                        )}
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: isDone || isToday ? '700' : '500',
+                            color: day.isRest ? COLORS.muted : isDone ? COLORS.primary : isActiveDay ? COLORS.white : 'rgba(255,255,255,0.5)',
+                            flex: 1,
+                          }}
+                          numberOfLines={1}
+                        >
+                          {day.focus}
+                        </Text>
+                      </View>
 
                       {isToday && !isDone && (
                         <View style={{ backgroundColor: 'rgba(57,255,20,0.15)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 }}>
@@ -169,7 +179,7 @@ const DailyPlanDetail = () => {
                       {isDone && (
                         <MaterialCommunityIcons name="check-circle-outline" size={16} color={COLORS.primary} style={{ opacity: 0.5 }} />
                       )}
-                    </View>
+                    </TouchableOpacity>
 
                     {/* Divider */}
                     {!isLast && (

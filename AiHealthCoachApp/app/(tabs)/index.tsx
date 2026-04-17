@@ -41,7 +41,7 @@ const TodayHealthStatus = () => {
   const { bmi: paramBmi } = useLocalSearchParams();
   const { profile, setProfile, updateProfileField, calculateBMI } = useProfile();
   const [showEditHealthModal, setShowEditHealthModal] = useState(false);
-  const { weeklyProgress, state: workoutState } = useWorkoutPlan();
+  const { state, weeklyProgress, weeklyGoal } = useWorkoutPlan();
   const brandGreen = COLORS.primary;
 
   // Use BMI from profile context, fallback to params, then default
@@ -164,8 +164,8 @@ const TodayHealthStatus = () => {
             <View className="flex-1" style={{ height: 140 }}>
               <MetricCard
                 label="Workout Progress"
-                value={`${weeklyProgress}/7`}
-                status={`${Math.round((weeklyProgress / 7) * 100)}%`}
+                value={`${weeklyProgress}/${weeklyGoal}`}
+                status={`${weeklyGoal > 0 ? Math.round((weeklyProgress / weeklyGoal) * 100) : 0}%`}
                 statusColor="text-purple-400"
                 icon={<FontAwesome5 name="heart" size={20} color="#A855F7" />}
               />
@@ -173,8 +173,8 @@ const TodayHealthStatus = () => {
             <View className="flex-1" style={{ height: 140 }}>
               <MetricCard
                 label="Day Streak"
-                value={workoutState.currentStreak}
-                status={`Personal Best: ${workoutState.personalBest}`}
+                value={state.currentStreak}
+                status={`Personal Best: ${state.personalBest}`}
                 statusColor="text-orange-400"
                 icon={
                   <MaterialCommunityIcons name="fire" size={24} color="#FB923C" />

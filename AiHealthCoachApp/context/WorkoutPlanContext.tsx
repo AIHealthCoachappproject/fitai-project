@@ -1,6 +1,15 @@
 import React, { createContext, useContext, useState, useMemo, useCallback, ReactNode } from 'react';
-import { WORKOUT_PLANS, getProgressFromStart, getDateForDay, formatShortDate } from '@/components/constants/workoutPlans';
+import { WORKOUT_PLANS, getProgressFromStart, getDateForDay, formatShortDate, getWeeklyGoalFromActivityLevel, getActiveDaysOfWeek } from '@/components/constants/workoutPlans';
 import type { GoalPlan } from '@/components/constants/workoutPlans';
+
+export interface WorkoutEntry {
+  weekIndex: number;
+  dayIndex: number;
+  date: string; // ISO date
+  weight: number;
+  notes?: string;
+  focus: string;
+}
 
 interface WorkoutPlanState {
   selectedGoal: string;
@@ -8,6 +17,8 @@ interface WorkoutPlanState {
   completedDays: boolean[][]; // [weekIndex][dayIndex]
   currentStreak: number;
   personalBest: number;
+  activityLevel: string;
+  workoutEntries: WorkoutEntry[]; // History of logged workouts with weight
 }
 
 interface WorkoutPlanContextType {
@@ -16,13 +27,17 @@ interface WorkoutPlanContextType {
   currentWeek: number;
   currentDay: number;
   weeklyProgress: number;
+  weeklyGoal: number;
+  activeDaysOfWeek: number[];
   totalWeeks: number;
   completedWeeks: number;
   todayFocus: string;
   nextWorkoutFocus: string;
+  getTodayWeight: () => number | null;
   getDayDate: (weekIndex: number, dayIndex: number) => string;
-  setGoal: (goalId: string) => void;
+  setGoal: (goalId: string, activityLevel: string) => void;
   completeToday: () => void;
+  logWorkoutEntry: (weekIndex: number, dayIndex: number, weight: number, notes?: string) => void;
 }
 
 const WorkoutPlanContext = createContext<WorkoutPlanContextType | undefined>(undefined);
@@ -37,6 +52,8 @@ export const WorkoutPlanProvider: React.FC<{ children: ReactNode }> = ({ childre
     completedDays: createEmptyDays(),
     currentStreak: 0,
     personalBest: 0,
+    activityLevel: '',
+    workoutEntries: [],
   });
 
   const { week: currentWeek, day: currentDay } = useMemo(
@@ -54,6 +71,16 @@ export const WorkoutPlanProvider: React.FC<{ children: ReactNode }> = ({ childre
     [state.completedDays, currentWeek],
   );
 
+  const weeklyGoal = useMemo(
+    () => getWeeklyGoalFromActivityLevel(state.activityLevel),
+    [state.activityLevel],
+  );
+
+  const activeDaysOfWeek = useMemo(
+    () => getActiveDaysOfWeek(weeklyGoal),
+    [weeklyGoal],
+  );
+
   const completedWeeks = useMemo(
     () => state.completedDays.filter((week) => week.every(Boolean)).length,
     [state.completedDays],
@@ -66,7 +93,6 @@ export const WorkoutPlanProvider: React.FC<{ children: ReactNode }> = ({ childre
 
   const nextWorkoutFocus = useMemo(() => {
     if (!plan) return '-';
-    // look ahead from tomorrow
     for (let offset = 1; offset <= 7; offset++) {
       const d = (currentDay + offset) % 7;
       const w = currentDay + offset >= 7 ? Math.min(currentWeek + 1, 3) : currentWeek;
@@ -81,19 +107,28 @@ export const WorkoutPlanProvider: React.FC<{ children: ReactNode }> = ({ childre
     return formatShortDate(getDateForDay(state.startDate, weekIndex, dayIndex));
   }, [state.startDate]);
 
-  const setGoal = useCallback((goalId: string) => {
+  const getTodayWeight = useCallback((): number | null => {
+    const todayEntry = state.workoutEntries.find(
+      (entry) => entry.weekIndex === currentWeek && entry.dayIndex === currentDay
+    );
+    return todayEntry ? todayEntry.weight : null;
+  }, [state.workoutEntries, currentWeek, currentDay]);
+
+  const setGoal = useCallback((goalId: string, activityLevel: string) => {
     setState({
       selectedGoal: goalId,
       startDate: new Date().toISOString(),
       completedDays: createEmptyDays(),
       currentStreak: 0,
       personalBest: 0,
+      activityLevel,
+      workoutEntries: [],
     });
   }, []);
 
   const completeToday = useCallback(() => {
     setState((prev) => {
-      if (prev.completedDays[currentWeek][currentDay]) return prev; // already done
+      if (prev.completedDays[currentWeek]?.[currentDay]) return prev;
 
       const newDays = prev.completedDays.map((w) => [...w]);
       newDays[currentWeek][currentDay] = true;
@@ -110,6 +145,31 @@ export const WorkoutPlanProvider: React.FC<{ children: ReactNode }> = ({ childre
     });
   }, [currentWeek, currentDay]);
 
+  const logWorkoutEntry = useCallback((weekIndex: number, dayIndex: number, weight: number, notes?: string) => {
+    setState((prev) => {
+      const focus = plan?.weeks[weekIndex]?.days[dayIndex]?.focus ?? 'Unknown';
+      const date = getDateForDay(prev.startDate, weekIndex, dayIndex).toISOString();
+      
+      const newEntry: WorkoutEntry = {
+        weekIndex,
+        dayIndex,
+        date,
+        weight,
+        notes,
+        focus,
+      };
+
+      const updatedEntries = prev.workoutEntries.filter(
+        (entry) => !(entry.weekIndex === weekIndex && entry.dayIndex === dayIndex)
+      );
+
+      return {
+        ...prev,
+        workoutEntries: [...updatedEntries, newEntry],
+      };
+    });
+  }, [plan]);
+
   const value = useMemo<WorkoutPlanContextType>(
     () => ({
       state,
@@ -117,15 +177,19 @@ export const WorkoutPlanProvider: React.FC<{ children: ReactNode }> = ({ childre
       currentWeek,
       currentDay,
       weeklyProgress,
+      weeklyGoal,
+      activeDaysOfWeek,
       totalWeeks: 4,
       completedWeeks,
       todayFocus,
       nextWorkoutFocus,
+      getTodayWeight,
       getDayDate,
       setGoal,
       completeToday,
+      logWorkoutEntry,
     }),
-    [state, plan, currentWeek, currentDay, weeklyProgress, completedWeeks, todayFocus, nextWorkoutFocus, getDayDate, setGoal, completeToday],
+    [state, plan, currentWeek, currentDay, weeklyProgress, weeklyGoal, activeDaysOfWeek, completedWeeks, todayFocus, nextWorkoutFocus, getTodayWeight, getDayDate, setGoal, completeToday, logWorkoutEntry],
   );
 
   return (

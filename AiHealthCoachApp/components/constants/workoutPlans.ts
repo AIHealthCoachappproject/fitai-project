@@ -98,3 +98,21 @@ export const formatShortDate = (date: Date): string => {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${date.getDate()} ${months[date.getMonth()]}`;
 };
+
+/** Calculate weekly goal and active days from activity level */
+export const getWeeklyGoalFromActivityLevel = (activityLevel: string): number => {
+  if (activityLevel.includes('Sedentary')) return 7; // Light health-focused, 7 days
+  if (activityLevel.includes('Lightly Active')) return 3; // 1-3 days/week
+  if (activityLevel.includes('Moderately Active')) return 5; // 3-5 days/week
+  if (activityLevel.includes('Very Active')) return 7; // 6-7 days/week
+  return 7; // default
+};
+
+/** Get array of day indices (0-6) that should be marked as active based on weekly goal */
+export const getActiveDaysOfWeek = (weeklyGoal: number): number[] => {
+  if (weeklyGoal >= 7) return [0, 1, 2, 3, 4, 5, 6]; // All days
+  if (weeklyGoal === 5) return [0, 1, 3, 4, 6]; // Mon, Tue, Thu, Fri, Sun (distributed)
+  if (weeklyGoal === 3) return [0, 3, 6]; // Mon, Thu, Sun (distributed)
+  if (weeklyGoal === 0) return []; // No days (shouldn't happen)
+  return [];
+};

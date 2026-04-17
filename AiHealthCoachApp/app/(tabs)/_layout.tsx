@@ -16,6 +16,7 @@ export default function TabLayout() {
       <Tabs.Screen name="AIHealthCoachChat" />
       <Tabs.Screen name="Profile" options={{ href: null }} />
       <Tabs.Screen name="DailyPlanDetail" options={{ href: null }} />
+      <Tabs.Screen name="WorkoutDayDetail" options={{ href: null }} />
     </Tabs>
   );
 }

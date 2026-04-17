@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import CustomButton from "@/components/ui/CustomButton";
 import SelectButton from "@/components/ui/SelectButton";
 import { useWorkoutPlan } from "@/context/WorkoutPlanContext";
+import { useProfile } from "@/context/ProfileContext";
 
 const BODY_GOALS = [
   { id: "weight_loss", label: "Weight Loss", icon: "🏃", desc: "Burn fat and get lean" },
@@ -16,6 +17,7 @@ const BODY_GOALS = [
 const ChooseYourBodyGoal = () => {
   const router = useRouter();
   const { setGoal } = useWorkoutPlan();
+  const { profile } = useProfile();
   const [selectedGoal, setSelectedGoal] = useState("");
   const [error, setError] = useState("");
 
@@ -24,7 +26,7 @@ const ChooseYourBodyGoal = () => {
       setError("กรุณาเลือกเป้าหมายของคุณ");
       return;
     }
-    setGoal(selectedGoal);
+    setGoal(selectedGoal, profile.activityLevel);
     router.push("/loading"); // ไปหน้า loading ที่จะนำไปสู่ Dashboard
   };
 
