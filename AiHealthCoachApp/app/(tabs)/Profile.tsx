@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/theme';
 import { useProfile } from '@/context/ProfileContext';
+import { useAuthContext } from '@/context/AuthContext';
 import EditHealthModal from '@/components/dashboard/EditHealthModal';
 import PhotoUploadModal from '@/components/dashboard/PhotoUploadModal';
 import MetricCard from '@/components/dashboard/MetricCard';
@@ -18,6 +19,7 @@ import MetricCard from '@/components/dashboard/MetricCard';
 const Profile = () => {
   const router = useRouter();
   const { profile, updateProfileField, calculateBMI } = useProfile();
+  const { profile: authProfile, upsertProfile } = useAuthContext();
   const [showEditHealthModal, setShowEditHealthModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
 
@@ -27,13 +29,16 @@ const Profile = () => {
   const mutedText = COLORS.muted;          // #A3A3A3 - description
   const bgColor = '#0A0A0A';               // darker background
 
-  const handleSaveHealth = (height: string, weight: string, activityLevel: string) => {
+  const handleSaveHealth = async (height: string, weight: string, activityLevel: string) => {
     updateProfileField('height', height);
     updateProfileField('weight', weight);
     updateProfileField('activityLevel', activityLevel);
-    setTimeout(() => {
-      calculateBMI();
-    }, 0);
+    setTimeout(() => { calculateBMI(); }, 0);
+    await upsertProfile({
+      height_cm: parseFloat(height),
+      weight_kg: parseFloat(weight),
+      activity_level: activityLevel,
+    });
   };
 
   const handleSavePhoto = (imageUri: string) => {
@@ -103,7 +108,7 @@ const Profile = () => {
               NAME
             </Text>
             <Text style={{ fontSize: 20, fontWeight: '800', color: whiteText }}>
-              {profile.name || 'Not Set'}
+              {authProfile?.name || profile.name || 'Not Set'}
             </Text>
           </View>
 
@@ -114,7 +119,7 @@ const Profile = () => {
                 AGE
               </Text>
               <Text style={{ fontSize: 20, fontWeight: '800', color: whiteText }}>
-                {profile.age || 'Not Set'}
+                {authProfile?.age || profile.age || 'Not Set'}
               </Text>
             </View>
             <View className="flex-1 p-5 rounded-2xl border" style={{ backgroundColor: COLORS.secondary, borderColor: 'rgba(255,255,255,0.05)' }}>
@@ -122,7 +127,7 @@ const Profile = () => {
                 GENDER
               </Text>
               <Text style={{ fontSize: 20, fontWeight: '800', color: whiteText }}>
-                {profile.gender || 'Not Set'}
+                {authProfile?.gender || profile.gender || 'Not Set'}
               </Text>
             </View>
           </View>
@@ -133,7 +138,7 @@ const Profile = () => {
               ACTIVITY LEVEL
             </Text>
             <Text style={{ fontSize: 20, fontWeight: '800', color: whiteText }}>
-              {profile.activityLevel || 'Not Set'}
+              {authProfile?.activity_level || profile.activityLevel || 'Not Set'}
             </Text>
           </View>
         </View>

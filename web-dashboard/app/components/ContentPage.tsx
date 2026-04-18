@@ -51,7 +51,7 @@ export default function ContentPage() {
               {workouts.map((workout: DashboardWorkoutLog) => (
                 <tr key={workout.id} className="border-b border-gray-800 hover:bg-[#2a2a2a]">
                   <td className="py-3 px-4">{workout.title}</td>
-                  <td className="py-3 px-4">{workout.duration}</td>
+                  <td className="py-3 px-4">{workout.duration_min}</td>
                   <td className="py-3 px-4">
                     <span className={`px-2 py-1 rounded-full text-xs ${
                       workout.completed

@@ -23,9 +23,9 @@ export function useWorkouts(userId: string | undefined): UseWorkoutsReturn {
 
       const { data, error: fetchError } = await supabase
         .from('workouts')
-        .select('id, user_id, title, duration, completed, created_at')
+        .select('id, user_id, title, type, duration_min, calories_burned, completed, completed_at')
         .eq('user_id', userId)
-        .order('created_at', { ascending: false })
+        .order('completed_at', { ascending: false })
         .limit(50);
 
       if (fetchError) throw fetchError;

@@ -23,6 +23,7 @@ import { useMeals } from "@/hooks/useMeals";
 import { useWorkouts } from "@/hooks/useWorkouts";
 import EditHealthModal from "@/components/dashboard/EditHealthModal";
 import FoodScannerModal from "@/components/food/FoodScannerModal";
+import { calculateTDEE } from "@/lib/health";
 
 const getBmiStatus = (bmiValue: number) => {
   if (bmiValue >= 30) return "Obese";
@@ -36,7 +37,7 @@ const getTodayStr = () => new Date().toISOString().split('T')[0];
 const TodayHealthStatus = () => {
   const router = useRouter();
   const { profile, updateProfileField, calculateBMI } = useProfile();
-  const { user, profile: authProfile } = useAuthContext();
+  const { user, profile: authProfile, upsertProfile } = useAuthContext();
   const { meals, loading: mealsLoading, error: mealsError, addMeal, refresh: refreshMeals } = useMeals(user?.id);
   const { workouts, loading: workoutsLoading, error: workoutsError, refresh: refreshWorkouts } = useWorkouts(user?.id);
   const [showEditHealthModal, setShowEditHealthModal] = useState(false);
@@ -53,12 +54,12 @@ const TodayHealthStatus = () => {
 
   // Real workout count today
   const todayWorkouts = useMemo(() => {
-    return workouts.filter((w) => w.created_at?.startsWith(todayStr));
+    return workouts.filter((w) => w.completed_at?.startsWith(todayStr));
   }, [workouts, todayStr]);
 
-  // Compute BMI from profile (users.weight + user_profiles.height_cm)
+  // Compute BMI from user_profiles.weight_kg + height_cm
   const bmiValue = useMemo(() => {
-    const w = authProfile?.weight ?? 0;
+    const w = authProfile?.weight_kg ?? 0;
     const hCm = authProfile?.height_cm ?? 0;
     if (w > 0 && hCm > 0) {
       const hM = hCm / 100;
@@ -66,23 +67,46 @@ const TodayHealthStatus = () => {
     }
     if (profile.bmi && profile.bmi !== "0") return parseFloat(profile.bmi);
     return 0;
-  }, [authProfile?.weight, authProfile?.height_cm, profile.bmi]);
+  }, [authProfile?.weight_kg, authProfile?.height_cm, profile.bmi]);
+
+  const calorieGoal = useMemo(() => {
+    if ((authProfile?.daily_calorie_goal ?? 0) > 0) return authProfile!.daily_calorie_goal;
+    return calculateTDEE(
+      authProfile?.weight_kg ?? 0,
+      authProfile?.height_cm ?? 0,
+      authProfile?.age ?? 0,
+      authProfile?.gender ?? '',
+      authProfile?.activity_level ?? '',
+    );
+  }, [authProfile]);
 
   const userData = {
     bmi: bmiValue > 0 ? bmiValue.toFixed(1) : "—",
     bmiStatus: bmiValue > 0 ? getBmiStatus(bmiValue) : "Not set",
     caloriesIn: todayCalories,
-    calorieGoal: 2000,
+    calorieGoal,
     workoutsDone: todayWorkouts.length,
   };
 
-  const handleSaveHealth = (height: string, weight: string, activityLevel: string) => {
+  const handleSaveHealth = async (height: string, weight: string, activityLevel: string) => {
     updateProfileField('height', height);
     updateProfileField('weight', weight);
     updateProfileField('activityLevel', activityLevel);
-    setTimeout(() => {
-      calculateBMI();
-    }, 0);
+    setTimeout(() => { calculateBMI(); }, 0);
+
+    const tdee = calculateTDEE(
+      parseFloat(weight),
+      parseFloat(height),
+      authProfile?.age ?? 0,
+      authProfile?.gender ?? '',
+      activityLevel,
+    );
+    await upsertProfile({
+      height_cm: parseFloat(height),
+      weight_kg: parseFloat(weight),
+      activity_level: activityLevel,
+      daily_calorie_goal: tdee,
+    });
   };
 
   const handleEditBMI = () => {
@@ -130,9 +154,16 @@ const TodayHealthStatus = () => {
               </View>
             </TouchableOpacity>
 
-            <Text className="text-white text-3xl font-black leading-9 px-5 pb-5">
-              Today Health{"\n"}Status
-            </Text>
+            <View className="px-5 pb-5">
+              {authProfile?.name ? (
+                <Text className="text-white/70 text-sm font-medium mb-1">
+                  Hello, {authProfile.name}
+                </Text>
+              ) : null}
+              <Text className="text-white text-3xl font-black leading-9">
+                Today Health{"\n"}Status
+              </Text>
+            </View>
           </ImageBackground>
         </View>
 
@@ -220,20 +251,20 @@ const TodayHealthStatus = () => {
             </View>
           </TouchableOpacity>
 
-          {/* ─── Next Workout & Daily Plan ─── */}
+          {/* ─── Weight & Daily Plan ─── */}
           <View className="flex-row gap-3">
-            {/* Next Workout */}
-            <TouchableOpacity
-              activeOpacity={0.75}
-              className="flex-1 bg-secondary rounded-[28px] border border-white/8 p-5"
-              style={{ minHeight: 120, justifyContent: 'space-between' }}
-            >
-              <MaterialCommunityIcons name="dumbbell" size={22} color="white" />
-              <View>
-                <Text className="text-secondary-text text-[11px] mb-1">next: </Text>
-                <Text className="text-whiteText text-lg font-bold">Leg day</Text>
-              </View>
-            </TouchableOpacity>
+            <View className="flex-1">
+              <MetricCard
+                label="Current Weight"
+                value={authProfile?.weight_kg ? `${authProfile.weight_kg} kg` : "—"}
+                status={`BMI: ${userData.bmi}`}
+                statusColor="text-orange-400"
+                icon={
+                  <MaterialCommunityIcons name="scale" size={26} color="#FB923C" />
+                }
+                onPress={handleEditBMI}
+              />
+            </View>
 
             {/* Daily Plan */}
             <TouchableOpacity

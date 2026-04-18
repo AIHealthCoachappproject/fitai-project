@@ -26,7 +26,7 @@ function InitialLayout() {
     if (!profile?.onboarding_completed) {
       if (!inOnboarding) router.replace("/(onboarding)/SetUpYourHealthProfile");
     } else {
-      if (!inTabs && !inLoading) router.replace("/(tabs)");
+      if (!inTabs && !inLoading && !inOnboarding) router.replace("/(tabs)");
     }
   }, [session, loading, profile, segments]);
 

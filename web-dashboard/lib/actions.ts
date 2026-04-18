@@ -6,12 +6,13 @@ import { supabaseAdmin } from './supabase-admin'
 
 export interface DashboardUser {
   id: string
-  email: string
-  name: string
-  goal: string
-  weight: number
-  plan: string
-  created_at: string
+  name: string | null
+  avatar_url: string | null
+  age: number | null
+  gender: string | null
+  goal: string | null
+  weight_kg: number | null
+  onboarding_completed: boolean
 }
 
 export interface DashboardFoodLog {
@@ -31,9 +32,11 @@ export interface DashboardWorkout {
   id: string
   user_id: string
   title: string
-  duration: number
+  type: string | null
+  duration_min: number | null
+  calories_burned: number | null
   completed: boolean
-  created_at: string
+  completed_at: string
   user_name?: string
 }
 
@@ -41,7 +44,7 @@ export interface DashboardWeightLog {
   id: string
   user_id: string
   weight_kg: number
-  bmi: number
+  bmi: number | null
   logged_at: string
   user_name?: string
 }
@@ -63,9 +66,9 @@ export type DashboardWorkoutLog = DashboardWorkout
 export async function getUsers(): Promise<{ data: DashboardUser[]; error: string | null }> {
   try {
     const { data, error } = await supabaseAdmin
-      .from('users')
-      .select('id, email, name, goal, weight, plan, created_at')
-      .order('created_at', { ascending: false })
+      .from('user_profiles')
+      .select('id, name, avatar_url, age, gender, goal, weight_kg, onboarding_completed')
+      .order('id', { ascending: false })
 
     if (error) throw error
     return { data: data ?? [], error: null }
@@ -106,8 +109,8 @@ export async function getWorkouts(): Promise<{ data: DashboardWorkout[]; error: 
   try {
     const { data, error } = await supabaseAdmin
       .from('workouts')
-      .select('id, user_id, title, duration, completed, created_at')
-      .order('created_at', { ascending: false })
+      .select('id, user_id, title, type, duration_min, calories_burned, completed, completed_at')
+      .order('completed_at', { ascending: false })
       .limit(100)
 
     if (error) throw error
@@ -157,7 +160,7 @@ export async function getWeightLogs(): Promise<{ data: DashboardWeightLog[]; err
 export async function getDashboardStats(): Promise<{ data: DashboardStats; error: string | null }> {
   try {
     const [usersRes, mealsRes, workoutsRes, weightRes] = await Promise.all([
-      supabaseAdmin.from('users').select('id', { count: 'exact', head: true }),
+      supabaseAdmin.from('user_profiles').select('id', { count: 'exact', head: true }),
       supabaseAdmin.from('food_logs').select('id', { count: 'exact', head: true }),
       supabaseAdmin.from('workouts').select('id', { count: 'exact', head: true }),
       supabaseAdmin.from('weight_logs').select('id', { count: 'exact', head: true }),
@@ -188,7 +191,7 @@ async function getUserNameMap(userIds: string[]): Promise<Record<string, string>
   if (userIds.length === 0) return {}
 
   const { data } = await supabaseAdmin
-    .from('users')
+    .from('user_profiles')
     .select('id, name')
     .in('id', userIds)
 

@@ -7,9 +7,9 @@ import SelectButton from "@/components/ui/SelectButton";
 import { useAuthContext } from "@/context/AuthContext";
 
 const BODY_GOALS = [
-  { id: "weight_loss", label: "Weight Loss", icon: "🏃", desc: "Burn fat and get lean" },
-  { id: "muscle_gain", label: "Muscle Gain", icon: "💪", desc: "Build strength and mass" },
-  { id: "toned_body", label: "Toned Body", icon: "🧘", desc: "Shape and define your muscles" },
+  { id: "lose_weight", label: "Weight Loss", icon: "🏃", desc: "Burn fat and get lean" },
+  { id: "gain_muscle", label: "Muscle Gain", icon: "💪", desc: "Build strength and mass" },
+  { id: "maintain", label: "Toned Body", icon: "🧘", desc: "Shape and define your muscles" },
   { id: "healthy", label: "Healthy Lifestyle", icon: "🥗", desc: "Stay fit and eat well" },
 ];
 

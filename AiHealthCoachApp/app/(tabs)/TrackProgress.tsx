@@ -69,7 +69,8 @@ export default function TrackProgress() {
     const result = await addWorkout({
       user_id: user!.id,
       title: workoutTitle.trim(),
-      duration: parseInt(workoutDuration, 10) || 0,
+      duration_min: parseInt(workoutDuration, 10) || 0,
+      calories_burned: parseFloat(workoutCalories) || 0,
       completed: true,
     });
     setSubmitting(false);
@@ -184,7 +185,7 @@ export default function TrackProgress() {
                 {workouts.slice(0, 5).map((w) => (
                   <View key={w.id} className="bg-[#1a1a1a] rounded-2xl p-4 mb-2 border border-gray-800">
                     <Text className="text-white font-semibold">{w.title}</Text>
-                    <Text className="text-gray-400 text-sm">{w.duration} min · {w.completed ? 'Completed' : 'In progress'}</Text>
+                    <Text className="text-gray-400 text-sm">{w.duration_min} min · {w.completed ? 'Completed' : 'In progress'}</Text>
                   </View>
                 ))}
               </View>

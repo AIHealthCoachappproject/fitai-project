@@ -37,9 +37,9 @@ export function UseAICoachData() {
         ...workoutsRes.data.map((w: DashboardWorkoutLog) => ({
           id: w.id,
           type: 'workout' as const,
-          description: `${w.title} — ${w.duration} min`,
+          description: `${w.title} — ${w.duration_min} min`,
           user_name: w.user_name ?? 'Unknown',
-          logged_at: w.created_at,
+          logged_at: w.completed_at,
         })),
       ]
 

@@ -9,6 +9,7 @@ import SelectButton from "@/components/ui/SelectButton";
 import { GENDER_OPTIONS, ACTIVITY_LEVELS } from "@/components/constants/healthData";
 import { useProfile } from "@/context/ProfileContext";
 import { useAuthContext } from "@/context/AuthContext";
+import { calculateTDEE } from "@/lib/health";
 
 const SetUpYourHealthProfile = () => {
   const router = useRouter();
@@ -48,11 +49,18 @@ const SetUpYourHealthProfile = () => {
   };
 
   const handleContinue = async () => {
-    if (!validate()) return;
+    console.log("[handleContinue] 1 — button pressed, running validation");
+    if (!validate()) {
+      console.log("[handleContinue] 1.1 — validation FAILED, aborting");
+      return;
+    }
+
+    console.log("[handleContinue] 2 — validation passed, setting isSubmitting=true");
     setIsSubmitting(true);
 
     try {
-      // Save to Profile Context (local state)
+      // ── Step 3: update local ProfileContext ──────────────────────────────
+      console.log("[handleContinue] 3 — updating local ProfileContext");
       setProfile({
         name: form.name,
         age: form.age,
@@ -64,30 +72,52 @@ const SetUpYourHealthProfile = () => {
         profileImage: null,
       });
 
-      // Save to Supabase
-      const result = await upsertProfile({
+      // ── Step 4: build Supabase payload ───────────────────────────────────
+      const activityDbValue =
+        ACTIVITY_LEVELS.find((l) => l.label === form.activityLevel)?.dbValue ??
+        form.activityLevel;
+      const tdee = calculateTDEE(
+        parseFloat(form.weight),
+        parseFloat(form.height),
+        parseInt(form.age, 10),
+        form.gender,
+        activityDbValue,
+      );
+      const payload = {
         name: form.name,
-        weight: parseFloat(form.weight),
-        // user_profiles fields
+        weight_kg: parseFloat(form.weight),
         age: parseInt(form.age, 10),
-        gender: form.gender,
-        activity_level: form.activityLevel,
+        gender: form.gender.toLowerCase(),
+        activity_level: activityDbValue,
         height_cm: parseFloat(form.height),
-      });
+        daily_calorie_goal: tdee,
+      };
+      console.log("[handleContinue] 4 — Supabase payload built:", JSON.stringify(payload));
 
+      // ── Step 5: send to Supabase (most likely hang point) ────────────────
+      console.log("[handleContinue] 5 — calling upsertProfile, waiting for Supabase...");
+      const result = await upsertProfile(payload);
+      console.log("[handleContinue] 5.1 — upsertProfile resolved, result:", JSON.stringify(result));
+
+      // ── Step 6: handle Supabase error ────────────────────────────────────
       if (!result.success) {
+        console.warn("[handleContinue] 6 — upsertProfile returned error:", result.error);
         Alert.alert("Error", result.error ?? "Failed to save profile");
-        setIsSubmitting(false);
-        return;
+        return; // finally will still run and reset isSubmitting
       }
 
-      router.push({
+      // ── Step 7: navigate — use replace so Back can't return to this form ─
+      console.log("[handleContinue] 7 — upsert successful, calling router.replace");
+      router.replace({
         pathname: "/(onboarding)/ChooseYourBodyGoal",
         params: { bmi: currentBMI, weight: form.weight, height: form.height },
       });
+      console.log("[handleContinue] 7.1 — router.replace called (navigation is async; screen will change shortly)");
     } catch (err) {
+      console.error("[handleContinue] CATCH — unexpected error:", err);
       Alert.alert("Error", "Failed to save profile. Please try again.");
     } finally {
+      console.log("[handleContinue] FINALLY — resetting isSubmitting=false");
       setIsSubmitting(false);
     }
   };
@@ -100,7 +130,7 @@ const SetUpYourHealthProfile = () => {
           <Text className="text-4xl font-extrabold text-primary italic uppercase">Set Up Profile</Text>
         </View>
 
-        {/* Username & Age (FormField จะมนตามมาตรฐานของมันอยู่แล้ว) */}
+        {/* Username & Age */}
         <View className="mb-6">
           <FormField
             title="Username"
@@ -127,7 +157,7 @@ const SetUpYourHealthProfile = () => {
           {errors.age && <Text className="text-red-500 text-xs mt-1 ml-1 font-medium">{errors.age}</Text>}
         </View>
 
-        {/* Gender - ปรับ rounded-2xl ให้มนเท่าช่องกรอกชื่อ */}
+        {/* Gender */}
         <View className="mb-8">
           <Text className="text-primary font-bold text-sm mb-4 ml-1 uppercase">Gender</Text>
           <View className="flex-row justify-between">
@@ -140,14 +170,14 @@ const SetUpYourHealthProfile = () => {
                   setForm({ ...form, gender });
                   if (errors.gender) setErrors({ ...errors, gender: undefined });
                 }}
-                containerStyles="flex-1 mx-1 h-14 rounded-2xl" // ✅ เพิ่มความมนระดับ 2xl
+                containerStyles="flex-1 mx-1 h-14 rounded-2xl"
               />
             ))}
           </View>
           {errors.gender && <Text className="text-red-500 text-xs mt-2 ml-1 font-medium">{errors.gender}</Text>}
         </View>
 
-        {/* Activity Level - ปรับความมนของการ์ดกิจกรรม */}
+        {/* Activity Level */}
         <View className="mb-8">
           <Text className="text-primary font-bold text-sm mb-4 ml-1 uppercase">Activity Level</Text>
           <View style={{ gap: 12 }}> 
@@ -160,7 +190,6 @@ const SetUpYourHealthProfile = () => {
                   setForm({ ...form, activityLevel: level.label });
                   if (errors.activityLevel) setErrors({ ...errors, activityLevel: undefined });
                 }}
-                // ปรับความสูงและดีไซน์ให้มนรับกับช่อง Input
                 containerStyles="w-full h-20 items-start px-5 py-3 rounded-2xl" 
                 description={level.desc}
               />
@@ -197,7 +226,7 @@ const SetUpYourHealthProfile = () => {
           </View>
         </View>
 
-        {/* BMI DISPLAY - ปรับให้มนเท่ากัน */}
+        {/* BMI DISPLAY */}
         {parseFloat(currentBMI) > 0 && (
           <View className="mb-10 p-4 bg-secondary rounded-2xl border border-primary/20">
             <Text className="text-white text-center text-sm font-medium">
@@ -206,12 +235,11 @@ const SetUpYourHealthProfile = () => {
           </View>
         )}
 
-        {/* Continue Button - ปรับ rounded-full (เพื่อให้มนที่สุดและสะดุดตาเหมือนปุ่มหลัก) */}
+        {/* Continue Button */}
         <CustomButton
           title="Continue"
           onPress={handleContinue}
           isLoading={isSubmitting}
-          //  ปรับ h-16 และ rounded-full เพื่อความพรีเมียมและกดง่าย
           containerStyles="rounded-full h-16 mb-10" 
         />
       </ScrollView>
