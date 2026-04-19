@@ -1,16 +1,13 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getUsers, getWorkouts, getMeals } from '@/lib/actions'
 
 interface Activity {
   id: string
-  type: 'user_signup' | 'workout_completed' | 'ai_message'
+  type: 'user_signup' | 'workout_completed' | 'meal_logged'
   description: string
   time: string
   user_name?: string
 }
-
-const getUserName = (users?: { name: string }[]) =>
-  users?.[0]?.name || 'User'
 
 export function UseNotificationsData() {
   const [activities, setActivities] = useState<Activity[]>([])
@@ -26,66 +23,46 @@ export function UseNotificationsData() {
       setLoading(true)
       setError(null)
 
-      const activities: Activity[] = []
+      const [usersRes, workoutsRes, mealsRes] = await Promise.all([
+        getUsers(),
+        getWorkouts(),
+        getMeals(),
+      ])
 
-      const { data: users } = await supabase
-        .from('users')
-        .select('id, name, created_at')
-        .order('created_at', { ascending: false })
-        .limit(10)
+      const allActivities: Activity[] = []
 
-      users?.forEach(user => {
-        activities.push({
+      usersRes.data.slice(0, 10).forEach(user => {
+        allActivities.push({
           id: `user-${user.id}`,
           type: 'user_signup',
-          description: `${user.name} signed up for FitAI`,
+          description: `${user.name ?? 'User'} signed up for FitAI`,
           time: user.created_at,
-          user_name: user.name
+          user_name: user.name,
         })
       })
 
-      const { data: workouts } = await supabase
-        .from('workouts')
-        .select('id, user_id, title, created_at, users(name)')
-        .eq('completed', true)
-        .order('created_at', { ascending: false })
-        .limit(10)
-
-      workouts?.forEach(workout => {
-        const name = getUserName(workout.users)
-
-        activities.push({
+      workoutsRes.data.slice(0, 10).forEach(workout => {
+        allActivities.push({
           id: `workout-${workout.id}`,
           type: 'workout_completed',
-          description: `${name} completed "${workout.title}"`,
+          description: `${workout.user_name ?? 'User'} logged "${workout.title}"`,
           time: workout.created_at,
-          user_name: name
+          user_name: workout.user_name,
         })
       })
 
-      const { data: messages } = await supabase
-        .from('ai_chats')
-        .select('id, user_id, message, created_at, users(name)')
-        .order('created_at', { ascending: false })
-        .limit(10)
-
-      messages?.forEach(message => {
-        const name = getUserName(message.users)
-
-        activities.push({
-          id: `message-${message.id}`,
-          type: 'ai_message',
-          description: `${name} asked AI: "${message.message}"`,
-          time: message.created_at,
-          user_name: name
+      mealsRes.data.slice(0, 10).forEach(meal => {
+        allActivities.push({
+          id: `meal-${meal.id}`,
+          type: 'meal_logged',
+          description: `${meal.user_name ?? 'User'} logged "${meal.food_name}" (${meal.calories} kcal)`,
+          time: meal.logged_at,
+          user_name: meal.user_name,
         })
       })
 
-      activities.sort(
-        (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
-      )
-
-      setActivities(activities.slice(0, 20))
+      allActivities.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+      setActivities(allActivities.slice(0, 20))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch activities')
     } finally {

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getDashboardStats } from '@/lib/actions'
 
 export function UseSettingsData() {
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalWorkouts: 0,
-    totalChats: 0
+    totalMeals: 0
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -19,16 +19,13 @@ export function UseSettingsData() {
       setLoading(true)
       setError(null)
 
-      const [usersResult, workoutsResult, chatsResult] = await Promise.all([
-        supabase.from('users').select('*', { count: 'exact', head: true }),
-        supabase.from('workouts').select('*', { count: 'exact', head: true }),
-        supabase.from('ai_chats').select('*', { count: 'exact', head: true })
-      ])
+      const { data, error } = await getDashboardStats()
+      if (error) throw new Error(error)
 
       setStats({
-        totalUsers: usersResult.count || 0,
-        totalWorkouts: workoutsResult.count || 0,
-        totalChats: chatsResult.count || 0
+        totalUsers: data.totalUsers,
+        totalWorkouts: data.totalWorkouts,
+        totalMeals: data.totalMeals
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch database stats')

@@ -1,33 +1,21 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getUsers, getDashboardStats, type DashboardProfile } from '@/lib/actions'
 
 interface DashboardStats {
   totalUsers: number
-  proUsers: number
-  activeToday: number
-  mrr: number
-}
-
-interface User {
-  id: string
-  email: string
-  name: string
-  goal: string
-  weight: number
-  plan: string
-  created_at: string
+  totalMeals: number
+  totalWorkouts: number
 }
 
 export function UseDashboardData() {
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
-    proUsers: 0,
-    activeToday: 0,
-    mrr: 0
+    totalMeals: 0,
+    totalWorkouts: 0,
   })
   const [signupsData, setSignupsData] = useState<{ date: string; count: number }[]>([])
   const [goalData, setGoalData] = useState<{ name: string; value: number }[]>([])
-  const [recentUsers, setRecentUsers] = useState<User[]>([])
+  const [recentUsers, setRecentUsers] = useState<DashboardProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -40,79 +28,57 @@ export function UseDashboardData() {
       setLoading(true)
       setError(null)
 
-      const { count: totalUsers } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true })
+      const [statsRes, usersRes] = await Promise.all([
+        getDashboardStats(),
+        getUsers(),
+      ])
 
-      const { count: proUsers } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true })
-        .eq('plan', 'pro')
-
-      const today = new Date().toISOString().split('T')[0]
-      const { count: activeToday } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', today)
-
-      const mrr = (proUsers || 0) * 299
+      if (statsRes.error) throw new Error(statsRes.error)
+      if (usersRes.error) throw new Error(usersRes.error)
 
       setStats({
-        totalUsers: totalUsers || 0,
-        proUsers: proUsers || 0,
-        activeToday: activeToday || 0,
-        mrr
+        totalUsers: statsRes.data.totalUsers,
+        totalMeals: statsRes.data.totalMeals,
+        totalWorkouts: statsRes.data.totalWorkouts,
       })
 
+      // Signups per day (last 7 days)
       const sevenDaysAgo = new Date()
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-      const { data: signups } = await supabase
-        .from('users')
-        .select('created_at')
-        .gte('created_at', sevenDaysAgo.toISOString())
-
       const signupsMap = new Map<string, number>()
       for (let i = 0; i < 7; i++) {
         const date = new Date()
         date.setDate(date.getDate() - i)
-        const dateStr = date.toISOString().split('T')[0]
-        signupsMap.set(dateStr, 0)
+        signupsMap.set(date.toISOString().split('T')[0], 0)
       }
 
-      signups?.forEach(user => {
+      usersRes.data.forEach(user => {
         const date = new Date(user.created_at).toISOString().split('T')[0]
-        signupsMap.set(date, (signupsMap.get(date) || 0) + 1)
+        if (signupsMap.has(date)) {
+          signupsMap.set(date, (signupsMap.get(date) ?? 0) + 1)
+        }
       })
 
-      const signupsArray = Array.from(signupsMap.entries())
-        .map(([date, count]) => ({ date, count }))
-        .sort((a, b) => a.date.localeCompare(b.date))
+      setSignupsData(
+        Array.from(signupsMap.entries())
+          .map(([date, count]) => ({ date, count }))
+          .sort((a, b) => a.date.localeCompare(b.date))
+      )
 
-      setSignupsData(signupsArray)
+      // Goal distribution
+      const goalCounts: Record<string, number> = {}
+      usersRes.data.forEach(user => {
+        const goal = user.goal ?? 'unknown'
+        goalCounts[goal] = (goalCounts[goal] ?? 0) + 1
+      })
+      setGoalData(
+        Object.entries(goalCounts).map(([name, value]) => ({
+          name: name.replace('_', ' ').toUpperCase(),
+          value,
+        }))
+      )
 
-      const { data: goals } = await supabase
-        .from('users')
-        .select('goal')
-
-      const goalCounts = goals?.reduce((acc: Record<string, number>, user: { goal: string }) => {
-        acc[user.goal] = (acc[user.goal] || 0) + 1
-        return acc
-      }, {} as Record<string, number>) || {}
-
-      const goalArray = Object.entries(goalCounts).map(([name, value]) => ({
-        name: name.replace('_', ' ').toUpperCase(),
-        value
-      }))
-
-      setGoalData(goalArray)
-
-      const { data: recent } = await supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5)
-
-      setRecentUsers(recent || [])
+      setRecentUsers(usersRes.data.slice(0, 5))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch data')
     } finally {

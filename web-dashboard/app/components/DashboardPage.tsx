@@ -1,6 +1,13 @@
 'use client'
 
-import { useDashboard, DashboardMetrics, RecentUser, RecentWorkout, RecentChat, WeightLog, WorkoutPlan } from '../hooks/useDashboard'
+import {
+  useDashboard,
+  type DashboardProfile,
+  type DashboardMealLog,
+  type DashboardWorkoutLog,
+  type DashboardWeightLog,
+  type DashboardStats,
+} from '../hooks/useDashboard'
 import StatCard from './StatCard'
 import PageHeader from './PageHeader'
 import LoadingSpinner from './LoadingSpinner'
@@ -10,16 +17,11 @@ import ChartContainer from './ChartContainer'
 
 // --- Config: Stat Cards ---
 
-const statsConfig: { title: string; key: keyof DashboardMetrics; sub: string; color: string }[] = [
+const statsConfig: { title: string; key: keyof DashboardStats; sub: string; color: string }[] = [
   { title: 'Total Users', key: 'totalUsers', sub: 'Registered users', color: '#22c55e' },
-  { title: 'Active Today', key: 'activeUsersToday', sub: 'Users active today', color: '#3b82f6' },
-  { title: 'Food Logs', key: 'foodLogsToday', sub: 'Logs recorded today', color: '#f59e0b' },
-  { title: 'Workouts', key: 'workoutsToday', sub: 'Completed today', color: '#ef4444' },
-  { title: 'AI Chats', key: 'aiChatsToday', sub: 'Chat interactions', color: '#8b5cf6' },
-  { title: 'Active Plans', key: 'activePlans', sub: 'Workout plans', color: '#06b6d4' },
-  { title: 'Inactive Users', key: 'inactiveUsers', sub: 'No activity in 3 days', color: '#ec4899' },
-  { title: 'Calorie Imbalance', key: 'calorieImbalance', sub: 'Exceeded by 500+ cal', color: '#f97316' },
-  { title: 'Weight Alerts', key: 'weightAlerts', sub: 'Sudden weight changes', color: '#d946ef' },
+  { title: 'Meal Logs', key: 'totalMeals', sub: 'Total meals logged', color: '#f59e0b' },
+  { title: 'Workout Logs', key: 'totalWorkouts', sub: 'Total workouts logged', color: '#ef4444' },
+  { title: 'Weight Logs', key: 'totalWeightLogs', sub: 'Weight entries', color: '#8b5cf6' },
 ]
 
 // --- Config: Table Columns ---
@@ -27,12 +29,22 @@ const statsConfig: { title: string; key: keyof DashboardMetrics; sub: string; co
 const userColumns = [
   { key: 'name' as const, header: 'Name' },
   { key: 'email' as const, header: 'Email' },
-  { key: 'goal' as const, header: 'Goal', render: (v: string) => v.replace('_', ' ').toUpperCase() },
+  { key: 'goal' as const, header: 'Goal', render: (v: string) => (v ?? '').replace('_', ' ').toUpperCase() },
+  { key: 'weight' as const, header: 'Weight', render: (v: number) => v ? `${v} kg` : '—' },
+  { key: 'plan' as const, header: 'Plan', render: (v: string) => (v ?? 'free').toUpperCase() },
   { key: 'created_at' as const, header: 'Joined', render: (v: string) => new Date(v).toLocaleDateString() },
 ]
 
+const mealColumns = [
+  { key: 'user_name' as const, header: 'User' },
+  { key: 'food_name' as const, header: 'Food' },
+  { key: 'calories' as const, header: 'Calories', render: (v: number) => `${v} kcal` },
+  { key: 'protein_g' as const, header: 'Protein', render: (v: number) => `${v}g` },
+  { key: 'logged_at' as const, header: 'Date', render: (v: string) => new Date(v).toLocaleDateString() },
+]
+
 const workoutColumns = [
-  { key: 'userName' as const, header: 'User' },
+  { key: 'user_name' as const, header: 'User' },
   { key: 'title' as const, header: 'Workout' },
   { key: 'duration' as const, header: 'Duration', render: (v: number) => `${v} min` },
   {
@@ -42,34 +54,14 @@ const workoutColumns = [
       <span className={v ? 'text-[#22c55e]' : 'text-gray-400'}>{v ? 'Completed' : 'Pending'}</span>
     ),
   },
-]
-
-const chatColumns = [
-  { key: 'userName' as const, header: 'User' },
-  { key: 'message' as const, header: 'Message' },
-  { key: 'role' as const, header: 'Role' },
   { key: 'created_at' as const, header: 'Date', render: (v: string) => new Date(v).toLocaleDateString() },
 ]
 
 const weightLogColumns = [
-  { key: 'userName' as const, header: 'User' },
+  { key: 'user_name' as const, header: 'User' },
   { key: 'weight_kg' as const, header: 'Weight', render: (v: number) => `${v} kg` },
-  { key: 'bmi' as const, header: 'BMI', render: (v: number) => v.toFixed(1) },
+  { key: 'bmi' as const, header: 'BMI', render: (v: number) => v ? v.toFixed(1) : '—' },
   { key: 'logged_at' as const, header: 'Date', render: (v: string) => new Date(v).toLocaleDateString() },
-]
-
-const workoutPlanColumns = [
-  { key: 'userName' as const, header: 'User' },
-  { key: 'plan_name' as const, header: 'Plan Name' },
-  { key: 'goal_type' as const, header: 'Goal', render: (v: string) => v.replace('_', ' ').toUpperCase() },
-  { key: 'days_per_week' as const, header: 'Days/Week', render: (v: number) => `${v} days` },
-  {
-    key: 'is_active' as const,
-    header: 'Status',
-    render: (v: boolean) => (
-      <span className={v ? 'text-[#22c55e]' : 'text-gray-400'}>{v ? 'Active' : 'Inactive'}</span>
-    ),
-  },
 ]
 
 // --- Component ---
@@ -82,11 +74,10 @@ export default function DashboardPage() {
   if (!data) return null
 
   const tableEntries = [
-    { title: 'Recent Users', render: () => <DataTable<RecentUser> data={data.recentUsers} columns={userColumns} /> },
-    { title: 'Recent Workouts', render: () => <DataTable<RecentWorkout> data={data.recentWorkouts} columns={workoutColumns} /> },
-    { title: 'Latest Weight Logs', render: () => <DataTable<WeightLog> data={data.weightLogs} columns={weightLogColumns} /> },
-    { title: 'Active Workout Plans', render: () => <DataTable<WorkoutPlan> data={data.workoutPlans} columns={workoutPlanColumns} /> },
-    { title: 'AI Chats', render: () => <DataTable<RecentChat> data={data.recentChats} columns={chatColumns} /> },
+    { title: 'Users', render: () => <DataTable<DashboardProfile> data={data.users} columns={userColumns} /> },
+    { title: 'Meal Logs', render: () => <DataTable<DashboardMealLog> data={data.meals} columns={mealColumns} /> },
+    { title: 'Workout Logs', render: () => <DataTable<DashboardWorkoutLog> data={data.workouts} columns={workoutColumns} /> },
+    { title: 'Weight Logs', render: () => <DataTable<DashboardWeightLog> data={data.weightLogs} columns={weightLogColumns} /> },
   ]
 
   return (
@@ -99,7 +90,7 @@ export default function DashboardPage() {
           <StatCard
             key={stat.key}
             title={stat.title}
-            value={data.metrics[stat.key].toLocaleString()}
+            value={data.stats[stat.key].toLocaleString()}
             sub={stat.sub}
             color={stat.color}
           />

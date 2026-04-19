@@ -1,68 +1,68 @@
 import { useEffect, useState, useMemo } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getMeals, getWorkouts, type DashboardMealLog, type DashboardWorkoutLog } from '@/lib/actions'
 
-interface AIChat {
+type LogEntry = {
   id: string
-  user_id: string
-  message: string
-  role: string
-  created_at: string
-  users?: {
-    name: string
-  }
+  type: 'meal' | 'workout'
+  description: string
+  user_name: string
+  logged_at: string
 }
 
 export function UseAICoachData() {
-  const [chats, setChats] = useState<AIChat[]>([])
+  const [entries, setEntries] = useState<LogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [roleFilter, setRoleFilter] = useState<string>('all')
+  const [typeFilter, setTypeFilter] = useState<string>('all')
 
   useEffect(() => {
-    fetchChats()
+    fetchData()
   }, [])
 
-  const fetchChats = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true)
       setError(null)
 
-      const { data, error } = await supabase
-        .from('ai_chats')
-        .select(`
-          *,
-          users (
-            name
-          )
-        `)
-        .order('created_at', { ascending: false })
+      const [mealsRes, workoutsRes] = await Promise.all([getMeals(), getWorkouts()])
 
-      if (error) throw error
+      const allEntries: LogEntry[] = [
+        ...mealsRes.data.map((m: DashboardMealLog) => ({
+          id: m.id,
+          type: 'meal' as const,
+          description: `${m.food_name} — ${m.calories} kcal`,
+          user_name: m.user_name ?? 'Unknown',
+          logged_at: m.logged_at,
+        })),
+        ...workoutsRes.data.map((w: DashboardWorkoutLog) => ({
+          id: w.id,
+          type: 'workout' as const,
+          description: `${w.title} — ${w.duration_min} min`,
+          user_name: w.user_name ?? 'Unknown',
+          logged_at: w.completed_at,
+        })),
+      ]
 
-      setChats(data || [])
+      allEntries.sort((a, b) => new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime())
+      setEntries(allEntries)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch chats')
+      setError(err instanceof Error ? err.message : 'Failed to fetch data')
     } finally {
       setLoading(false)
     }
   }
 
-  const filteredChats = useMemo(() => {
-    let filtered = chats
-
-    if (roleFilter !== 'all') {
-      filtered = filtered.filter(chat => chat.role === roleFilter)
-    }
-
-    return filtered
-  }, [chats, roleFilter])
+  const filteredEntries = useMemo(() => {
+    if (typeFilter === 'all') return entries
+    return entries.filter(e => e.type === typeFilter)
+  }, [entries, typeFilter])
 
   return {
-    chats: filteredChats,
+    entries: filteredEntries,
     loading,
     error,
-    roleFilter,
-    setRoleFilter,
-    refetch: fetchChats
+    typeFilter,
+    setTypeFilter,
+    refetch: fetchData,
   }
 }
