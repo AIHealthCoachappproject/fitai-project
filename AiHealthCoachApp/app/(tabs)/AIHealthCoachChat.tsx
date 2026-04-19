@@ -84,7 +84,8 @@ const AIHealthCoachChat = () => {
         ...prev,
         { id: (Date.now() + 1).toString(), role: 'ai', content: response, time: getTime() },
       ]);
-    } catch {
+    } catch (error) {
+      console.error('[Chat error]', error);
       setMessages((prev) => [
         ...prev,
         { id: (Date.now() + 1).toString(), role: 'ai', content: 'ขออภัย เกิดข้อผิดพลาด กรุณาลองใหม่', time: getTime() },

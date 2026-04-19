@@ -79,8 +79,11 @@ export function useAuth(): UseAuthReturn {
     init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, newSession) => {
+      async (event, newSession) => {
         if (!mounted) return;
+        // INITIAL_SESSION is handled by init() above; processing it here
+        // races with getSession() and can overwrite state with stale values.
+        if (event === 'INITIAL_SESSION') return;
         setSession(newSession);
         setUser(newSession?.user ?? null);
         if (newSession?.user) await fetchProfile(newSession.user.id);

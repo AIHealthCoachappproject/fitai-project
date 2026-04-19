@@ -46,7 +46,10 @@ export function UseAnalyticsData() {
       }
 
       workoutsRes.data.forEach((w: DashboardWorkoutLog) => {
-        const date = new Date(w.created_at).toISOString().split('T')[0]
+        if (!w.completed_at) return
+        const parsed = new Date(w.completed_at)
+        if (isNaN(parsed.getTime())) return
+        const date = parsed.toISOString().split('T')[0]
         if (workoutsMap.has(date)) {
           workoutsMap.set(date, (workoutsMap.get(date) ?? 0) + 1)
         }

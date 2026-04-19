@@ -14,7 +14,7 @@ export interface FoodAnalysis {
 }
 
 export async function analyzeFoodImage(base64: string): Promise<FoodAnalysis> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
   const result = await model.generateContent([
     {
@@ -23,19 +23,23 @@ export async function analyzeFoodImage(base64: string): Promise<FoodAnalysis> {
         data: base64,
       },
     },
-    `วิเคราะห์อาหารในรูปนี้ ตอบเป็น JSON เท่านั้น ห้ามมีข้อความอื่น:
-{
-  "food_name": "ชื่ออาหารภาษาอังกฤษ",
-  "food_name_th": "ชื่ออาหารภาษาไทย",
-  "serving_size": "เช่น 1 จาน / 1 ชาม",
-  "calories": 0,
-  "protein_g": 0,
-  "carbs_g": 0,
-  "fat_g": 0,
-  "confidence": 0.0
-}`,
+    `Analyze the food in this image. Return ONLY a valid JSON object. Do not include any markdown, explanations, backticks, or code fences. Your entire response must be parseable by JSON.parse().
+
+Required format:
+{"food_name":"English food name","food_name_th":"ชื่ออาหารภาษาไทย","serving_size":"e.g. 1 plate","calories":0,"protein_g":0,"carbs_g":0,"fat_g":0,"confidence":0.0}`,
   ]);
 
-  const text = result.response.text().replace(/```json|```/g, '').trim();
-  return JSON.parse(text) as FoodAnalysis;
+  const raw = result.response.text();
+  console.log('[Gemini] raw response:', raw);
+
+  // Strip markdown code fences and any leading/trailing whitespace
+  const text = raw.replace(/```[\w]*\n?/g, '').replace(/```/g, '').trim();
+
+  // Extract JSON object in case there is surrounding text
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error(`No JSON object found in response: ${text}`);
+  }
+
+  return JSON.parse(jsonMatch[0]) as FoodAnalysis;
 }

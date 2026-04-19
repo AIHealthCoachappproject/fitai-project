@@ -5,9 +5,9 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/theme';
 import { useProfile } from '@/context/ProfileContext';
@@ -17,9 +17,8 @@ import PhotoUploadModal from '@/components/dashboard/PhotoUploadModal';
 import MetricCard from '@/components/dashboard/MetricCard';
 
 const Profile = () => {
-  const router = useRouter();
-  const { profile, updateProfileField, calculateBMI } = useProfile();
-  const { profile: authProfile, upsertProfile } = useAuthContext();
+  const { profile, updateProfileField, calculateBMI, setProfile } = useProfile();
+  const { profile: authProfile, upsertProfile, signOut } = useAuthContext();
   const [showEditHealthModal, setShowEditHealthModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
 
@@ -43,6 +42,33 @@ const Profile = () => {
 
   const handleSavePhoto = (imageUri: string) => {
     updateProfileField('profileImage', imageUri);
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout?',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            setProfile({
+              name: '',
+              age: '',
+              gender: '',
+              activityLevel: '',
+              height: '',
+              weight: '',
+              profileImage: null,
+              bmi: '0',
+            });
+            await signOut();
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -141,6 +167,19 @@ const Profile = () => {
               {authProfile?.activity_level || profile.activityLevel || 'Not Set'}
             </Text>
           </View>
+        </View>
+
+        {/* Logout Button */}
+        <View className="mx-5 mb-6">
+          <TouchableOpacity
+            onPress={handleLogout}
+            className="flex-row items-center p-5 rounded-2xl border"
+            style={{ backgroundColor: COLORS.secondary, borderColor: 'rgba(255,255,255,0.05)' }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="log-out-outline" size={22} color="#FF4444" style={{ marginRight: 12 }} />
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#FF4444' }}>Logout</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 

@@ -60,6 +60,8 @@ export default function FoodScannerModal({ visible, onClose, onConfirm }: FoodSc
         { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true },
       );
 
+      console.log('[FoodScanner] base64 length:', compressed.base64?.length ?? 'MISSING');
+
       const analysis = await analyzeFoodImage(compressed.base64!);
       setResult(analysis);
       setFoodName(analysis.food_name_th || analysis.food_name);
@@ -68,7 +70,8 @@ export default function FoodScannerModal({ visible, onClose, onConfirm }: FoodSc
       setCarbs(String(analysis.carbs_g));
       setFat(String(analysis.fat_g));
       setStep('confirm');
-    } catch {
+    } catch (error) {
+      console.error('[FoodScanner] analyzeFoodImage error:', error);
       Alert.alert('วิเคราะห์ไม่สำเร็จ', 'ไม่สามารถระบุอาหารได้ กรุณาลองใหม่');
       setStep('idle');
     }
@@ -117,7 +120,7 @@ export default function FoodScannerModal({ visible, onClose, onConfirm }: FoodSc
         protein_g: parseFloat(protein) || 0,
         carbs_g: parseFloat(carbs) || 0,
         fat_g: parseFloat(fat) || 0,
-        meal_type: 'snack',
+        meal_type: 'Snack',
       });
       reset();
     } finally {

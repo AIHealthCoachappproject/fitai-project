@@ -15,7 +15,7 @@ import {
   Ionicons,
 } from "@expo/vector-icons";
 import React, { useMemo, useState } from "react";
-import { useRouter } from "expo-router";
+import { useRouter, Redirect } from "expo-router";
 import { COLORS } from "@/constants/theme";
 import { useProfile } from "@/context/ProfileContext";
 import { useAuthContext } from "@/context/AuthContext";
@@ -43,6 +43,8 @@ const TodayHealthStatus = () => {
   const [showEditHealthModal, setShowEditHealthModal] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const brandGreen = COLORS.primary;
+
+  if (!user) return <Redirect href="/" />;
 
   // Real calories from today's meals
   const todayStr = getTodayStr();
@@ -266,6 +268,7 @@ const TodayHealthStatus = () => {
             {/* Daily Plan */}
             <TouchableOpacity
               activeOpacity={0.75}
+              onPress={() => router.push("/DailyPlanScreen")}
               className="flex-1 bg-secondary rounded-[28px] border border-white/8 p-5"
               style={{ minHeight: 120, justifyContent: 'space-between' }}
             >
@@ -283,7 +286,7 @@ const TodayHealthStatus = () => {
         visible={showScanner}
         onClose={() => setShowScanner(false)}
         onConfirm={async (food) => {
-          await addMeal({ ...food, user_id: user!.id });
+          await addMeal({ ...food, user_id: user.id });
           setShowScanner(false);
         }}
       />

@@ -1,34 +1,17 @@
-import React, { useEffect } from "react";
-import { Stack, useRouter, useSegments } from "expo-router";
+import React from "react";
+import { Stack, useSegments, Redirect } from "expo-router";
 import { View, ActivityIndicator } from "react-native";
 import "./global.css";
 import { ProfileProvider } from "@/context/ProfileContext";
 import { AuthProvider, useAuthContext } from "@/context/AuthContext";
 
+// Screens outside (tabs) that authenticated+onboarded users may visit freely.
+// Add new stack screens here to prevent the auth guard from redirecting them.
+const AUTHENTICATED_STACK_SCREENS = ["DailyPlanScreen"];
+
 function InitialLayout() {
   const { session, loading, profile } = useAuthContext();
-  const router = useRouter();
   const segments = useSegments();
-
-  useEffect(() => {
-    if (loading) return;
-    if (session && !profile) return; // profile fetch in-flight — wait
-
-    const inTabs = segments[0] === "(tabs)";
-    const inOnboarding = segments[0] === "(onboarding)";
-    const inLoading = segments[0] === "loading";
-
-    if (!session) {
-      if (inTabs || inOnboarding) router.replace("/");
-      return;
-    }
-
-    if (!profile?.onboarding_completed) {
-      if (!inOnboarding) router.replace("/(onboarding)/SetUpYourHealthProfile");
-    } else {
-      if (!inTabs && !inLoading && !inOnboarding) router.replace("/(tabs)");
-    }
-  }, [session, loading, profile, segments]);
 
   if (loading || (session && !profile)) {
     return (
@@ -45,11 +28,38 @@ function InitialLayout() {
     );
   }
 
+  const inTabs = segments[0] === "(tabs)";
+  const inOnboarding = segments[0] === "(onboarding)";
+  const inLoading = segments[0] === "loading";
+  const inAuthenticatedStack = AUTHENTICATED_STACK_SCREENS.includes(
+    segments[0] ?? ""
+  );
+
+  if (!session && (inTabs || inOnboarding || inAuthenticatedStack)) {
+    return <Redirect href="/" />;
+  }
+
+  if (session && !profile?.onboarding_completed && !inOnboarding) {
+    return <Redirect href="/(onboarding)/SetUpYourHealthProfile" />;
+  }
+
+  if (
+    session &&
+    profile?.onboarding_completed &&
+    !inTabs &&
+    !inLoading &&
+    !inOnboarding &&
+    !inAuthenticatedStack
+  ) {
+    return <Redirect href="/(tabs)" />;
+  }
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="loading" />
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="DailyPlanScreen" options={{ animation: "slide_from_right" }} />
       <Stack.Screen name="(onboarding)/SetUpYourHealthProfile" />
       <Stack.Screen name="(onboarding)/ChooseYourBodyGoal" />
       <Stack.Screen name="(auth)/Register" />

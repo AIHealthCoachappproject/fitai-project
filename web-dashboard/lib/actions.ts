@@ -36,7 +36,7 @@ export interface DashboardWorkout {
   duration_min: number | null
   calories_burned: number | null
   completed: boolean
-  completed_at: string
+  completed_at: string | null
   user_name?: string
 }
 

@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TextInput, Alert, TouchableOpacity, Image, FlatList } from "react-native";
+import { View, Text, ScrollView, TextInput, Alert, TouchableOpacity, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState } from "react";
 import * as ImagePicker from "expo-image-picker";
@@ -73,7 +73,7 @@ export default function TrackProgress() {
         protein_g: parseFloat(mealProtein) || 0,
         carbs_g: parseFloat(mealCarbs) || 0,
         fat_g: parseFloat(mealFat) || 0,
-        meal_type: 'other',
+        meal_type: 'Snack',
         image_uri: mealImageUri,
       });
 
@@ -209,9 +209,22 @@ export default function TrackProgress() {
               <View className="mt-6">
                 <Text className="text-white font-bold text-lg mb-3">Recent Meals</Text>
                 {meals.slice(0, 5).map((m) => (
-                  <View key={m.id} className="bg-[#1a1a1a] rounded-2xl p-4 mb-2 border border-gray-800">
-                    <Text className="text-white font-semibold">{m.food_name}</Text>
-                    <Text className="text-gray-400 text-sm">{m.calories} kcal · P:{m.protein_g}g · C:{m.carbs_g}g · F:{m.fat_g}g</Text>
+                  <View key={m.id} className="bg-[#1a1a1a] rounded-2xl p-4 mb-2 border border-gray-800 flex-row items-center">
+                    {m.image_uri ? (
+                      <Image
+                        source={{ uri: m.image_uri }}
+                        style={{ width: 60, height: 60, borderRadius: 12, marginRight: 12 }}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={{ width: 60, height: 60, borderRadius: 12, marginRight: 12, backgroundColor: '#2a2a2a', alignItems: 'center', justifyContent: 'center' }}>
+                        <Ionicons name="restaurant" size={24} color="#555" />
+                      </View>
+                    )}
+                    <View className="flex-1">
+                      <Text className="text-white font-semibold">{m.food_name}</Text>
+                      <Text className="text-gray-400 text-sm">{m.calories} kcal · P:{m.protein_g}g · C:{m.carbs_g}g · F:{m.fat_g}g</Text>
+                    </View>
                   </View>
                 ))}
               </View>
@@ -234,23 +247,19 @@ export default function TrackProgress() {
               </TouchableOpacity>
 
               {showWorkoutDropdown && (
-                <View className="bg-[#1a1a1a] border border-gray-700 rounded-2xl mt-1 max-h-48">
-                  <FlatList
-                    data={EXERCISE_OPTIONS}
-                    keyExtractor={(item) => item}
-                    scrollEnabled={true}
-                    renderItem={({ item }) => (
-                      <TouchableOpacity
-                        onPress={() => {
-                          setWorkoutTitle(item);
-                          setShowWorkoutDropdown(false);
-                        }}
-                        className="px-4 py-3 border-b border-gray-800"
-                      >
-                        <Text className="text-white text-base">{item}</Text>
-                      </TouchableOpacity>
-                    )}
-                  />
+                <View className="bg-[#1a1a1a] border border-gray-700 rounded-2xl mt-1">
+                  {EXERCISE_OPTIONS.map((item) => (
+                    <TouchableOpacity
+                      key={item}
+                      onPress={() => {
+                        setWorkoutTitle(item);
+                        setShowWorkoutDropdown(false);
+                      }}
+                      className="px-4 py-3 border-b border-gray-800"
+                    >
+                      <Text className="text-white text-base">{item}</Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
               )}
             </View>
