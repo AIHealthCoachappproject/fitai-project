@@ -185,18 +185,16 @@ const TodayHealthStatus = () => {
           )}
           {/* ─── BMI & Calories ─── */}
           <View className="flex-row gap-3">
-            <View className="flex-1">
-              <MetricCard
-                label="Current BMI"
-                value={userData.bmi}
-                status={userData.bmiStatus}
-                statusColor="text-cyan-400"
-                icon={
-                  <MaterialCommunityIcons name="scale-bathroom" size={26} color="#22D3EE" />
-                }
-                onPress={handleEditBMI}
-              />
-            </View>
+            <MetricCard
+              label="Current BMI"
+              value={userData.bmi}
+              status={userData.bmiStatus}
+              statusColor="text-cyan-400"
+              icon={
+                <MaterialCommunityIcons name="scale-bathroom" size={26} color="#22D3EE" />
+              }
+              onPress={handleEditBMI}
+            />
             <MetricCard
               label="Calories Today"
               value={userData.caloriesIn}
@@ -253,18 +251,17 @@ const TodayHealthStatus = () => {
 
           {/* ─── Weight & Daily Plan ─── */}
           <View className="flex-row gap-3">
-            <View className="flex-1">
-              <MetricCard
-                label="Current Weight"
-                value={authProfile?.weight_kg ? `${authProfile.weight_kg} kg` : "—"}
-                status={`BMI: ${userData.bmi}`}
-                statusColor="text-orange-400"
-                icon={
-                  <MaterialCommunityIcons name="scale" size={26} color="#FB923C" />
-                }
-                onPress={handleEditBMI}
-              />
-            </View>
+            <MetricCard
+              label="Current Weight"
+              value={authProfile?.weight_kg ?? "—"}
+              unit={authProfile?.weight_kg ? "kg" : undefined}
+              status={`BMI: ${userData.bmi}`}
+              statusColor="text-orange-400"
+              icon={
+                <MaterialCommunityIcons name="scale" size={26} color="#FB923C" />
+              }
+              onPress={handleEditBMI}
+            />
 
             {/* Daily Plan */}
             <TouchableOpacity

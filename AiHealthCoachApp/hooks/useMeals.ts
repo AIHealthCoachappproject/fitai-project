@@ -23,7 +23,7 @@ export function useMeals(userId: string | undefined): UseMealsReturn {
 
       const { data, error: fetchError } = await supabase
         .from('food_logs')
-        .select('id, user_id, food_name, calories, protein_g, carbs_g, fat_g, meal_type, logged_at')
+        .select('id, user_id, food_name, food_name_th, calories, protein_g, carbs_g, fat_g, amount_g, meal_type, image_uri, logged_at')
         .eq('user_id', userId)
         .order('logged_at', { ascending: false })
         .limit(50);
@@ -59,6 +59,8 @@ export function useMeals(userId: string | undefined): UseMealsReturn {
       const message = err instanceof Error ? err.message : 'Failed to add meal';
       console.error('MEAL INSERT ERROR:', message);
       return { success: false, error: message };
+    } finally {
+      setLoading(false);
     }
   }, [userId, fetchMeals]);
 

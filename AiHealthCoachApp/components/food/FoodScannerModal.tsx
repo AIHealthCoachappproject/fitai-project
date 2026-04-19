@@ -51,23 +51,11 @@ export default function FoodScannerModal({ visible, onClose, onConfirm }: FoodSc
     onClose();
   };
 
-  const handleScan = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('ต้องการสิทธิ์กล้อง', 'กรุณาอนุญาตการใช้กล้องในการตั้งค่า');
-      return;
-    }
-
-    const picked = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-    });
-    if (picked.canceled) return;
-
+  const processImage = async (uri: string) => {
     setStep('analyzing');
     try {
       const compressed = await ImageManipulator.manipulateAsync(
-        picked.assets[0].uri,
+        uri,
         [{ resize: { width: 800 } }],
         { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true },
       );
@@ -84,6 +72,36 @@ export default function FoodScannerModal({ visible, onClose, onConfirm }: FoodSc
       Alert.alert('วิเคราะห์ไม่สำเร็จ', 'ไม่สามารถระบุอาหารได้ กรุณาลองใหม่');
       setStep('idle');
     }
+  };
+
+  const handleScan = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('ต้องการสิทธิ์กล้อง', 'กรุณาอนุญาตการใช้กล้องในการตั้งค่า');
+      return;
+    }
+
+    const picked = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    });
+    if (picked.canceled) return;
+    await processImage(picked.assets[0].uri);
+  };
+
+  const handleGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('ต้องการสิทธิ์แกลลอรี่', 'กรุณาอนุญาตการเข้าถึงรูปภาพในการตั้งค่า');
+      return;
+    }
+
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    });
+    if (picked.canceled) return;
+    await processImage(picked.assets[0].uri);
   };
 
   const handleConfirm = async () => {
@@ -160,19 +178,43 @@ export default function FoodScannerModal({ visible, onClose, onConfirm }: FoodSc
                   : 'ถ่ายรูปอาหารเพื่อให้ AI คำนวณแคลอรี่อัตโนมัติ'}
               </Text>
               {step === 'idle' && (
-                <TouchableOpacity
-                  onPress={handleScan}
-                  style={{
-                    backgroundColor: COLORS.primary,
-                    paddingVertical: 14,
-                    paddingHorizontal: 40,
-                    borderRadius: 16,
-                  }}
-                >
-                  <Text style={{ color: '#000', fontWeight: '700', fontSize: 16 }}>
-                    เปิดกล้อง
-                  </Text>
-                </TouchableOpacity>
+                <View style={{ gap: 12, alignItems: 'center' }}>
+                  <TouchableOpacity
+                    onPress={handleScan}
+                    style={{
+                      backgroundColor: COLORS.primary,
+                      paddingVertical: 14,
+                      paddingHorizontal: 40,
+                      borderRadius: 16,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <Ionicons name="camera" size={18} color="#000" />
+                    <Text style={{ color: '#000', fontWeight: '700', fontSize: 16 }}>
+                      เปิดกล้อง
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleGallery}
+                    style={{
+                      paddingVertical: 14,
+                      paddingHorizontal: 40,
+                      borderRadius: 16,
+                      borderWidth: 1,
+                      borderColor: COLORS.primary,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <Ionicons name="image-outline" size={18} color={COLORS.primary} />
+                    <Text style={{ color: COLORS.primary, fontWeight: '700', fontSize: 16 }}>
+                      เลือกรูปจากแกลลอรี่
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           )}

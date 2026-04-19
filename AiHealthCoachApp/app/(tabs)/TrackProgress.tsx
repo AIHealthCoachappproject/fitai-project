@@ -1,16 +1,17 @@
-import { View, Text, ScrollView, TextInput, Alert, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, TextInput, Alert, TouchableOpacity, Image, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState } from "react";
+import * as ImagePicker from "expo-image-picker";
 import { useAuthContext } from "@/context/AuthContext";
 import { useMeals } from "@/hooks/useMeals";
 import { useWorkouts } from "@/hooks/useWorkouts";
 import { useProgress } from "@/hooks/useProgress";
 import CustomButton from "@/components/ui/CustomButton";
-import { COLORS } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
-import type { InsertFoodLog, InsertWorkoutLog, InsertWeightLog } from "@/lib/types";
 
 type TabKey = "meal" | "workout" | "weight";
+
+const EXERCISE_OPTIONS = ["Pushup", "Pull-up", "Sit-up", "Squats", "Running"];
 
 export default function TrackProgress() {
   const { user, profile } = useAuthContext();
@@ -27,36 +28,70 @@ export default function TrackProgress() {
   const [mealProtein, setMealProtein] = useState("");
   const [mealCarbs, setMealCarbs] = useState("");
   const [mealFat, setMealFat] = useState("");
+  const [mealImageUri, setMealImageUri] = useState<string | null>(null);
 
   // Workout form
   const [workoutTitle, setWorkoutTitle] = useState("");
   const [workoutDuration, setWorkoutDuration] = useState("");
   const [workoutCalories, setWorkoutCalories] = useState("");
+  const [showWorkoutDropdown, setShowWorkoutDropdown] = useState(false);
 
   // Weight form
   const [weightKg, setWeightKg] = useState("");
+
+  const pickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission required", "Camera roll access is required to select images");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setMealImageUri(result.assets[0].uri);
+    }
+  };
 
   const handleAddMeal = async () => {
     if (!mealName.trim() || !mealCalories.trim()) {
       Alert.alert("Error", "Meal name and calories are required");
       return;
     }
-    setSubmitting(true);
-    const result = await addMeal({
-      user_id: user!.id,
-      food_name: mealName.trim(),
-      calories: parseFloat(mealCalories) || 0,
-      protein_g: parseFloat(mealProtein) || 0,
-      carbs_g: parseFloat(mealCarbs) || 0,
-      fat_g: parseFloat(mealFat) || 0,
-      meal_type: 'other',
-    });
-    setSubmitting(false);
-    if (result.success) {
-      setMealName(""); setMealCalories(""); setMealProtein(""); setMealCarbs(""); setMealFat("");
-      Alert.alert("Success", "Meal logged!");
-    } else {
-      Alert.alert("Error", result.error ?? "Failed to log meal");
+
+    try {
+      setSubmitting(true);
+      const result = await addMeal({
+        user_id: user!.id,
+        food_name: mealName.trim(),
+        calories: parseFloat(mealCalories) || 0,
+        protein_g: parseFloat(mealProtein) || 0,
+        carbs_g: parseFloat(mealCarbs) || 0,
+        fat_g: parseFloat(mealFat) || 0,
+        meal_type: 'other',
+        image_uri: mealImageUri,
+      });
+
+      if (result.success) {
+        setMealName("");
+        setMealCalories("");
+        setMealProtein("");
+        setMealCarbs("");
+        setMealFat("");
+        setMealImageUri(null);
+        Alert.alert("Success", "Meal logged!");
+      } else {
+        Alert.alert("Error", result.error ?? "Failed to log meal");
+      }
+    } catch (error) {
+      Alert.alert("Error", error instanceof Error ? error.message : "Failed to log meal");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -105,6 +140,7 @@ export default function TrackProgress() {
       Alert.alert("Error", result.error ?? "Failed to log weight");
     }
   };
+
 
   const tabs: { key: TabKey; label: string; icon: string }[] = [
     { key: "meal", label: "Meal", icon: "restaurant" },
@@ -155,6 +191,18 @@ export default function TrackProgress() {
             <TextInput placeholder="Protein (g)" placeholderTextColor="#666" value={mealProtein} onChangeText={setMealProtein} keyboardType="numeric" className={inputStyle} />
             <TextInput placeholder="Carbs (g)" placeholderTextColor="#666" value={mealCarbs} onChangeText={setMealCarbs} keyboardType="numeric" className={inputStyle} />
             <TextInput placeholder="Fat (g)" placeholderTextColor="#666" value={mealFat} onChangeText={setMealFat} keyboardType="numeric" className={inputStyle} />
+
+            <TouchableOpacity onPress={pickImage} className="bg-[#1a1a1a] border border-gray-700 rounded-2xl px-4 py-3 mb-3 flex-row items-center justify-center">
+              <Ionicons name="image" size={20} color="#39FF14" />
+              <Text className="text-white ml-2 font-semibold">Upload Photo</Text>
+            </TouchableOpacity>
+
+            {mealImageUri && (
+              <View className="mb-3">
+                <Image source={{ uri: mealImageUri }} className="w-full h-40 rounded-2xl" resizeMode="cover" />
+              </View>
+            )}
+
             <CustomButton title="Log Meal" onPress={handleAddMeal} isLoading={submitting} containerStyles="mt-2" />
 
             {meals.length > 0 && (
@@ -174,7 +222,39 @@ export default function TrackProgress() {
         {/* Workout Form */}
         {activeTab === "workout" && (
           <View>
-            <TextInput placeholder="Workout title" placeholderTextColor="#666" value={workoutTitle} onChangeText={setWorkoutTitle} className={inputStyle} />
+            <View className="mb-3">
+              <TouchableOpacity
+                onPress={() => setShowWorkoutDropdown(!showWorkoutDropdown)}
+                className="bg-[#1a1a1a] border border-gray-700 rounded-2xl px-4 py-3 flex-row justify-between items-center"
+              >
+                <Text className={workoutTitle ? "text-white text-base" : "text-gray-600 text-base"}>
+                  {workoutTitle || "Select Exercise"}
+                </Text>
+                <Ionicons name={showWorkoutDropdown ? "chevron-up" : "chevron-down"} size={20} color="#39FF14" />
+              </TouchableOpacity>
+
+              {showWorkoutDropdown && (
+                <View className="bg-[#1a1a1a] border border-gray-700 rounded-2xl mt-1 max-h-48">
+                  <FlatList
+                    data={EXERCISE_OPTIONS}
+                    keyExtractor={(item) => item}
+                    scrollEnabled={true}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        onPress={() => {
+                          setWorkoutTitle(item);
+                          setShowWorkoutDropdown(false);
+                        }}
+                        className="px-4 py-3 border-b border-gray-800"
+                      >
+                        <Text className="text-white text-base">{item}</Text>
+                      </TouchableOpacity>
+                    )}
+                  />
+                </View>
+              )}
+            </View>
+
             <TextInput placeholder="Duration (min)" placeholderTextColor="#666" value={workoutDuration} onChangeText={setWorkoutDuration} keyboardType="numeric" className={inputStyle} />
             <TextInput placeholder="Calories burned" placeholderTextColor="#666" value={workoutCalories} onChangeText={setWorkoutCalories} keyboardType="numeric" className={inputStyle} />
             <CustomButton title="Log Workout" onPress={handleAddWorkout} isLoading={submitting} containerStyles="mt-2" />
@@ -217,6 +297,7 @@ export default function TrackProgress() {
             )}
           </View>
         )}
+
       </ScrollView>
     </SafeAreaView>
   );

@@ -45,6 +45,7 @@ export interface FoodLog {
   carbs_g: number;
   fat_g: number;
   amount_g: number | null;
+  image_uri: string | null;
   logged_at: string;
 }
 
@@ -105,6 +106,17 @@ export interface WorkoutPlan {
   is_active: boolean;
 }
 
+/* ── Matches `skill_logs` table ── */
+export interface SkillLog {
+  id: string;
+  user_id: string;
+  skill_name: string;
+  duration_min: number;
+  successful_attempts: number;
+  logged_at: string;
+}
+
 export type InsertFoodLog = Omit<FoodLog, 'id' | 'logged_at'>;
 export type InsertWorkoutLog = Omit<WorkoutLog, 'id' | 'completed_at'>;
 export type InsertWeightLog = Omit<WeightLog, 'id' | 'logged_at'>;
+export type InsertSkillLog = Omit<SkillLog, 'id' | 'logged_at'>;

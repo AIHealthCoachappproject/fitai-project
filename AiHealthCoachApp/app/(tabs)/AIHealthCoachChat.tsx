@@ -57,6 +57,7 @@ const AIHealthCoachChat = () => {
   };
 
   const sendMessage = async (text: string) => {
+    if (isTyping) return;
     const trimmed = text.trim();
     if (!trimmed) return;
 
